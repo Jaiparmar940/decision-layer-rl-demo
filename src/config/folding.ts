@@ -3,7 +3,7 @@ import type { TaskConfig } from '../types';
 export const foldingConfig: TaskConfig = {
   meta: {
     id: 'folding',
-    title: 'DECISION-LAYER ENVIRONMENT // COMMERCIAL: LAUNDRY FOLDING',
+    title: 'COMMERCIAL: LAUNDRY FOLDING',
     domainLabel: 'COMMERCIAL: LAUNDRY FOLDING',
     footerOneLiner:
       'Task-level simulation for planner training & eval. No physics, no robot time. Reskinnable per deployment.',
