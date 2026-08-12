@@ -2,7 +2,22 @@ import type { BatchResult, Scorecard, TaskConfig } from '../types';
 import { buildBatchResult } from './metrics';
 import { runEpisode } from './runner';
 
-export function runBatch(config: TaskConfig, count?: number): BatchResult {
+/** Fixed master-seed sequence — identical RESULTS for every visitor. */
+export function batchMasterSeed(index: number): number {
+  return 1000 + index * 97 + ((index * 13) % 89);
+}
+
+export const RESULTS_EPISODE_COUNT = 1000;
+
+export interface DetailedBatchResult extends BatchResult {
+  baselineScores: Scorecard[];
+  trainedScores: Scorecard[];
+}
+
+export function runBatchDetailed(
+  config: TaskConfig,
+  count?: number,
+): DetailedBatchResult {
   const n = count ?? config.batch.episodes;
   const baselineScores: Scorecard[] = [];
   const trainedScores: Scorecard[] = [];
@@ -11,7 +26,7 @@ export function runBatch(config: TaskConfig, count?: number): BatchResult {
     typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   for (let i = 0; i < n; i++) {
-    const masterSeed = 1000 + i * 97 + ((i * 13) % 89);
+    const masterSeed = batchMasterSeed(i);
     const serial = i + 1;
 
     const b = runEpisode({
@@ -33,7 +48,25 @@ export function runBatch(config: TaskConfig, count?: number): BatchResult {
 
   const t1 =
     typeof performance !== 'undefined' ? performance.now() : Date.now();
-  return buildBatchResult(baselineScores, trainedScores, t1 - t0, config);
+  const batch = buildBatchResult(baselineScores, trainedScores, t1 - t0, config);
+  return {
+    ...batch,
+    baselineScores,
+    trainedScores,
+  };
+}
+
+export function runBatch(config: TaskConfig, count?: number): BatchResult {
+  const { baselineScores: _b, trainedScores: _t, ...rest } =
+    runBatchDetailed(config, count);
+  void _b;
+  void _t;
+  return rest;
+}
+
+/** Canonical 1,000-episode RESULTS computation (fixed seeds). */
+export function runResultsBatch(config: TaskConfig): DetailedBatchResult {
+  return runBatchDetailed(config, RESULTS_EPISODE_COUNT);
 }
 
 /**

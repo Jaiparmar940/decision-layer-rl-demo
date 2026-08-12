@@ -33,7 +33,17 @@ Deploy `dist/` to Vercel or GitHub Pages. **No environment variables required** 
 
 Unknown values fall back to hospitality.
 
-## Controls
+## Views
+
+| URL | View |
+|-----|------|
+| `/` or `?view=live` | LIVE streaming workcell (default) |
+| `/?view=results` | RESULTS — 1,000-episode batch dashboard |
+| `/?domain=folding&view=results` | RESULTS for folding domain |
+
+RESULTS runs a fixed-seed 1,000-episode batch on first open (cached per domain), with headline delta cards, dumbbell chart, and a 50×20 episode strip per policy.
+
+## Controls (LIVE)
 
 - **BASELINE / TRAINED** — scripted pre-/post-training planner
 - **1x / 4x** — stream speed (default delay 150ms)
