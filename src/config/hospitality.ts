@@ -3,7 +3,7 @@ import type { TaskConfig } from '../types';
 export const hospitalityConfig: TaskConfig = {
   meta: {
     id: 'hospitality',
-    title: 'DECISION-LAYER ENVIRONMENT // HOSPITALITY: GARMENT PACKAGING',
+    title: 'HOSPITALITY: GARMENT PACKAGING',
     domainLabel: 'HOSPITALITY: GARMENT PACKAGING',
     footerOneLiner:
       'Task-level simulation for planner training & eval. No physics, no robot time. Reskinnable per deployment.',

@@ -35,12 +35,14 @@ export function Header({
         <img className="brand-logo" src={logo} alt="" width={32} height={32} />
         <span className="brand-name">Second Nature Labs</span>
       </div>
-      <div className="header-title">{config.meta.title}</div>
-      <StatusChip title="Episode id and RNG seed">
-        <strong>
-          {episodeId} // SEED {seed}
-        </strong>
-      </StatusChip>
+      <div className="header-meta">
+        <div className="header-title">{config.meta.title}</div>
+        <StatusChip title="Episode id and RNG seed">
+          <strong>
+            {episodeId} // SEED {seed}
+          </strong>
+        </StatusChip>
+      </div>
       <div className="header-controls">
         <div className="seg" role="group" aria-label="Policy mode">
           <button
