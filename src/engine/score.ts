@@ -127,5 +127,7 @@ export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard
     repeatedFailureHandledSafely,
     totalSteps: state.step,
     escalated: state.flags.escalated,
+    stepsExhausted: state.flags.stepsExhausted,
+    invalidActionCount: state.flags.invalidActionCount,
   };
 }

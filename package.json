@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && bash scripts/ci-guard-bundle.sh",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval:llm": "tsx scripts/eval-llm.ts",
+    "ci:guard": "bash scripts/ci-guard-bundle.sh"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -18,6 +20,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "tsx": "^4.19.3",
     "typescript": "~5.8.3",
     "vite": "^6.3.3",
     "vitest": "^3.1.2"

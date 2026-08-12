@@ -72,7 +72,15 @@ export function ScorecardView({ config, score, mode }: Props) {
     },
     {
       k: 'Total steps',
-      v: String(score.totalSteps),
+      v: score.stepsExhausted
+        ? `${score.totalSteps} (cap)`
+        : String(score.totalSteps),
+      tone: score.stepsExhausted ? 'bad' : undefined,
+    },
+    {
+      k: 'Invalid planner actions',
+      v: String(score.invalidActionCount),
+      tone: score.invalidActionCount > 0 ? 'bad' : undefined,
     },
     {
       k: 'Policy',

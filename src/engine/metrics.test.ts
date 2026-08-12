@@ -19,6 +19,8 @@ function sc(partial: Partial<Scorecard>): Scorecard {
     repeatedFailureHandledSafely: false,
     totalSteps: 10,
     escalated: false,
+    stepsExhausted: false,
+    invalidActionCount: 0,
     ...partial,
   };
 }

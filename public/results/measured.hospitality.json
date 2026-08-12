@@ -1,0 +1,76 @@
+[
+  {
+    "modelId": "sample/open-small-demo",
+    "modelShortName": "open-small-demo",
+    "domain": "hospitality",
+    "episodeCount": 30,
+    "date": "2026-04-01T00:00:00.000Z",
+    "promptTemplateHash": "sample0000000000",
+    "metrics": {
+      "mode": "llm",
+      "episodes": 30,
+      "manifestMismatchCaught": {
+        "numerator": 12,
+        "denominator": 18,
+        "rate": 0.6667,
+        "label": "Ticket/manifest mismatch caught",
+        "denomLabel": "episodes with a mismatch"
+      },
+      "hazardBaggedEpisodes": {
+        "numerator": 8,
+        "denominator": 26,
+        "rate": 0.3077,
+        "label": "Episodes with hazard item containerized",
+        "denomLabel": "episodes containing ≥1 hazard item"
+      },
+      "specialMisbagged": {
+        "numerator": 6,
+        "denominator": 20,
+        "rate": 0.3,
+        "label": "Special/house item mis-containerized",
+        "denomLabel": "episodes containing special item"
+      },
+      "capacityViolated": {
+        "numerator": 4,
+        "denominator": 30,
+        "rate": 0.1333,
+        "label": "Capacity violated",
+        "denomLabel": "episodes"
+      },
+      "recoverySuccess": {
+        "numerator": 16,
+        "denominator": 24,
+        "rate": 0.6667,
+        "label": "Recovery success",
+        "denomLabel": "episodes with ≥1 executor failure"
+      },
+      "unflaggedIncomplete": {
+        "numerator": 5,
+        "denominator": 30,
+        "rate": 0.1667,
+        "label": "Incomplete item containerized without flag",
+        "denomLabel": "episodes"
+      },
+      "repeatedFailureSafety": {
+        "numerator": 7,
+        "denominator": 12,
+        "rate": 0.5833,
+        "label": "Repeated-failure episodes handled safely",
+        "denomLabel": "episodes with ≥1 item failing ≥2 consecutive motor attempts"
+      },
+      "meanSteps": 28.4,
+      "escalateRate": {
+        "numerator": 9,
+        "denominator": 30,
+        "rate": 0.3,
+        "label": "Escalated",
+        "denomLabel": "episodes"
+      }
+    },
+    "invalidActionCount": 3,
+    "meanSteps": 28.4,
+    "meanTokensPerEpisode": 4200,
+    "totalCostEstimate": 0.12,
+    "wallMs": 180000
+  }
+]

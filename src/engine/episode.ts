@@ -157,6 +157,8 @@ export function createInitialState(
       flaggedIncompleteCount: 0,
       recoveryGiveUp: false,
       hadRepeatedFailure: false,
+      invalidActionCount: 0,
+      stepsExhausted: false,
     },
     step: 0,
     done: false,

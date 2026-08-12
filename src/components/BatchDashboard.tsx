@@ -1,71 +1,144 @@
-import type { BatchResult, MetricValue } from '../types';
+import type { BatchResult, MeasuredRunResult, MetricValue } from '../types';
 import { formatMetric } from '../engine/metrics';
+import { MeasuredLabel } from './MeasuredLabel';
 import { SimLabel } from './SimLabel';
 
 interface Props {
   result: BatchResult;
+  measured?: MeasuredRunResult[] | null;
 }
 
-function BarPair({
+function pctOf(m: MetricValue): number | null {
+  return m.rate == null ? null : Math.round(m.rate * 100);
+}
+
+function BarTrack({
+  label,
+  pct,
+  variant,
+  valueLabel,
+}: {
+  label: string;
+  pct: number | null;
+  variant: 'baseline' | 'trained' | 'measured';
+  valueLabel?: string;
+}) {
+  return (
+    <div className="bar-track">
+      <span className="bar-name" title={label}>
+        {label}
+      </span>
+      <div className="bar-fill-wrap">
+        {pct == null ? null : (
+          <div className={`bar-fill ${variant}`} style={{ width: `${pct}%` }} />
+        )}
+      </div>
+      <span>{valueLabel ?? (pct == null ? 'n/a' : `${pct}%`)}</span>
+    </div>
+  );
+}
+
+function MetricBlock({
   label,
   baseline,
   trained,
+  measured,
   invertGood,
 }: {
   label: string;
   baseline: MetricValue;
   trained: MetricValue;
-  /** If true, higher is worse (show as failure rate visually) */
+  measured?: MeasuredRunResult[];
   invertGood?: boolean;
 }) {
   void invertGood;
-  const bPct = baseline.rate == null ? null : Math.round(baseline.rate * 100);
-  const tPct = trained.rate == null ? null : Math.round(trained.rate * 100);
+  const bPct = pctOf(baseline);
+  const tPct = pctOf(trained);
+  const allZero =
+    baseline.denominator === 0 &&
+    trained.denominator === 0 &&
+    !(measured ?? []).some((m) => {
+      const key = metricKeyFromLabel(baseline.label);
+      const mv = key ? m.metrics[key] : null;
+      return mv && mv.denominator > 0;
+    });
 
   return (
     <div className="metric-row">
       <div className="metric-label">{label}</div>
-      <div className="metric-detail">
-        BASELINE — {formatMetric(baseline)}
-      </div>
-      <div className="metric-detail">
-        TRAINED — {formatMetric(trained)}
-      </div>
+      <div className="metric-detail">BASELINE — {formatMetric(baseline)}</div>
+      <div className="metric-detail">TRAINED — {formatMetric(trained)}</div>
       <SimLabel />
-      {baseline.denominator === 0 && trained.denominator === 0 ? (
+      {(measured ?? []).map((run) => {
+        const key = metricKeyFromLabel(baseline.label);
+        const mv = key ? run.metrics[key] : undefined;
+        if (!mv) return null;
+        return (
+          <div key={run.modelId + run.date} className="metric-detail measured-detail">
+            MEASURED — {run.modelShortName}, {run.episodeCount} eps — {formatMetric(mv)}
+          </div>
+        );
+      })}
+      {(measured ?? []).length > 0 ? <MeasuredLabel /> : null}
+      {allZero ? (
         <div className="bar-na">n/a (0 episodes)</div>
       ) : (
         <div className="bars">
-          <div className="bar-track">
-            <span>BASELINE</span>
-            <div className="bar-fill-wrap">
-              {bPct == null ? null : (
-                <div className="bar-fill baseline" style={{ width: `${bPct}%` }} />
-              )}
-            </div>
-            <span>{bPct == null ? 'n/a' : `${bPct}%`}</span>
-          </div>
-          <div className="bar-track">
-            <span>TRAINED</span>
-            <div className="bar-fill-wrap">
-              {tPct == null ? null : (
-                <div className="bar-fill trained" style={{ width: `${tPct}%` }} />
-              )}
-            </div>
-            <span>{tPct == null ? 'n/a' : `${tPct}%`}</span>
-          </div>
+          <BarTrack label="BASELINE" pct={bPct} variant="baseline" />
+          <BarTrack label="TRAINED" pct={tPct} variant="trained" />
+          {(measured ?? []).map((run) => {
+            const key = metricKeyFromLabel(baseline.label);
+            const mv = key ? run.metrics[key] : undefined;
+            if (!mv) return null;
+            return (
+              <BarTrack
+                key={run.modelId + '-bar-' + baseline.label}
+                label={`M:${run.modelShortName}`}
+                pct={pctOf(mv)}
+                variant="measured"
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-export function BatchDashboard({ result }: Props) {
+type MetricKey = keyof Pick<
+  BatchResult['baseline'],
+  | 'manifestMismatchCaught'
+  | 'hazardBaggedEpisodes'
+  | 'specialMisbagged'
+  | 'capacityViolated'
+  | 'recoverySuccess'
+  | 'unflaggedIncomplete'
+  | 'repeatedFailureSafety'
+>;
+
+function metricKeyFromLabel(label: string): MetricKey | null {
+  const map: Record<string, MetricKey> = {
+    'Ticket/manifest mismatch caught': 'manifestMismatchCaught',
+    'Episodes with hazard item containerized': 'hazardBaggedEpisodes',
+    'Special/house item mis-containerized': 'specialMisbagged',
+    'Capacity violated': 'capacityViolated',
+    'Recovery success': 'recoverySuccess',
+    'Incomplete item containerized without flag': 'unflaggedIncomplete',
+    'Repeated-failure episodes handled safely': 'repeatedFailureSafety',
+  };
+  return map[label] ?? null;
+}
+
+export function BatchDashboard({ result, measured }: Props) {
   const { baseline: b, trained: t } = result;
+  const runs = measured ?? [];
 
   return (
     <div className="batch-dash">
-      <h2>BATCH EVAL // BASELINE VS TRAINED</h2>
+      <h2>
+        BATCH EVAL // BASELINE VS TRAINED
+        {runs.length > 0 ? ' VS MEASURED' : ''}
+      </h2>
       <div className="batch-meta">
         <span className="chip">
           <strong>{result.episodeCount}</strong> episodes × 2 policies
@@ -77,46 +150,59 @@ export function BatchDashboard({ result }: Props) {
           wall <strong>{result.wallMs.toFixed(1)}ms</strong>
         </span>
         <SimLabel />
+        {runs.map((r) => (
+          <span key={r.modelId + r.date} className="chip chip-measured">
+            MEASURED — <strong>{r.modelShortName}</strong>, {r.episodeCount} eps
+          </span>
+        ))}
+        {runs.length > 0 ? <MeasuredLabel /> : null}
       </div>
 
-      <BarPair
+      <MetricBlock
         label="Manifest mismatch caught (higher better)"
         baseline={b.manifestMismatchCaught}
         trained={t.manifestMismatchCaught}
+        measured={runs}
       />
-      <BarPair
+      <MetricBlock
         label="Episodes with hazard item containerized (lower better)"
         baseline={b.hazardBaggedEpisodes}
         trained={t.hazardBaggedEpisodes}
+        measured={runs}
         invertGood
       />
-      <BarPair
+      <MetricBlock
         label="Special item mis-containerized (lower better)"
         baseline={b.specialMisbagged}
         trained={t.specialMisbagged}
+        measured={runs}
         invertGood
       />
-      <BarPair
+      <MetricBlock
         label="Capacity violated (lower better)"
         baseline={b.capacityViolated}
         trained={t.capacityViolated}
+        measured={runs}
         invertGood
       />
-      <BarPair
+      <MetricBlock
         label="Recovery success after executor failure (higher better)"
         baseline={b.recoverySuccess}
         trained={t.recoverySuccess}
+        measured={runs}
       />
-      <BarPair
+      <MetricBlock
         label="Incomplete item containerized without flag (lower better)"
         baseline={b.unflaggedIncomplete}
         trained={t.unflaggedIncomplete}
+        measured={runs}
         invertGood
       />
-      <BarPair
+      <MetricBlock
         label="Repeated-failure episodes handled safely (higher better)"
         baseline={b.repeatedFailureSafety}
         trained={t.repeatedFailureSafety}
+        measured={runs}
       />
 
       <div className="metric-row">
@@ -128,31 +214,41 @@ export function BatchDashboard({ result }: Props) {
           TRAINED — {t.meanSteps.toFixed(1)} steps / {t.episodes} episodes
         </div>
         <SimLabel />
+        {runs.map((r) => (
+          <div key={r.modelId + '-steps'} className="metric-detail measured-detail">
+            MEASURED — {r.modelShortName}, {r.episodeCount} eps —{' '}
+            {r.meanSteps.toFixed(1)} steps
+            {r.meanTokensPerEpisode > 0
+              ? ` · ~${Math.round(r.meanTokensPerEpisode)} tok/ep`
+              : ''}
+            {r.totalCostEstimate > 0
+              ? ` · ~$${r.totalCostEstimate.toFixed(4)}`
+              : ''}
+          </div>
+        ))}
+        {runs.length > 0 ? <MeasuredLabel /> : null}
         <div className="bars">
-          <div className="bar-track">
-            <span>BASELINE</span>
-            <div className="bar-fill-wrap">
-              <div
-                className="bar-fill baseline"
-                style={{
-                  width: `${Math.min(100, (b.meanSteps / 80) * 100)}%`,
-                }}
-              />
-            </div>
-            <span>{b.meanSteps.toFixed(1)}</span>
-          </div>
-          <div className="bar-track">
-            <span>TRAINED</span>
-            <div className="bar-fill-wrap">
-              <div
-                className="bar-fill trained"
-                style={{
-                  width: `${Math.min(100, (t.meanSteps / 80) * 100)}%`,
-                }}
-              />
-            </div>
-            <span>{t.meanSteps.toFixed(1)}</span>
-          </div>
+          <BarTrack
+            label="BASELINE"
+            pct={Math.min(100, (b.meanSteps / 80) * 100)}
+            variant="baseline"
+            valueLabel={b.meanSteps.toFixed(1)}
+          />
+          <BarTrack
+            label="TRAINED"
+            pct={Math.min(100, (t.meanSteps / 80) * 100)}
+            variant="trained"
+            valueLabel={t.meanSteps.toFixed(1)}
+          />
+          {runs.map((r) => (
+            <BarTrack
+              key={r.modelId + '-steps-bar'}
+              label={`M:${r.modelShortName}`}
+              pct={Math.min(100, (r.meanSteps / 80) * 100)}
+              variant="measured"
+              valueLabel={r.meanSteps.toFixed(1)}
+            />
+          ))}
         </div>
       </div>
     </div>

@@ -538,11 +538,17 @@ button.primary {
 
 .bar-track {
   display: grid;
-  grid-template-columns: 72px 1fr 48px;
+  grid-template-columns: 110px 1fr 48px;
   gap: 8px;
   align-items: center;
   font-size: 10px;
   color: var(--text-mute);
+}
+
+.bar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bar-fill-wrap {
@@ -562,6 +568,30 @@ button.primary {
 
 .bar-fill.trained {
   background: var(--green);
+}
+
+.bar-fill.measured {
+  background: repeating-linear-gradient(
+    -45deg,
+    #4a7fa5,
+    #4a7fa5 3px,
+    #6a9fc0 3px,
+    #6a9fc0 6px
+  );
+  box-shadow: inset 0 0 0 1px #8eb8d4;
+}
+
+.metric-detail.measured-detail {
+  color: #8eb8d4;
+}
+
+.chip-measured {
+  border-color: #4a7fa5;
+  color: #b8d4e8;
+}
+
+.measured-label {
+  color: #8eb8d4;
 }
 
 .bar-na {

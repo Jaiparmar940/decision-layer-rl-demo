@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { resolveDomain } from './config';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -8,10 +8,23 @@ import { ExecutorPanel } from './components/ExecutorPanel';
 import { ScorecardView } from './components/Scorecard';
 import { BatchDashboard } from './components/BatchDashboard';
 import { useEpisodeRunner } from './hooks/useEpisodeRunner';
+import { loadMeasuredResults } from './measured/loadMeasured';
+import type { MeasuredRunResult } from './types';
 
 export default function App() {
   const config = useMemo(() => resolveDomain(), []);
   const runner = useEpisodeRunner(config);
+  const [measured, setMeasured] = useState<MeasuredRunResult[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadMeasuredResults(config.meta.id).then((rows) => {
+      if (!cancelled) setMeasured(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [config.meta.id]);
 
   return (
     <div className="app">
@@ -42,7 +55,7 @@ export default function App() {
       {(runner.score || runner.batch) && (
         <div className="lower">
           {runner.batch ? (
-            <BatchDashboard result={runner.batch} />
+            <BatchDashboard result={runner.batch} measured={measured} />
           ) : runner.score ? (
             <ScorecardView
               config={config}

@@ -1,4 +1,4 @@
-export type PolicyMode = 'baseline' | 'trained';
+export type PolicyMode = 'baseline' | 'trained' | 'llm';
 
 export type ActionKind =
   | 'checkManifest'
@@ -161,6 +161,10 @@ export interface EpisodeFlags {
   recoveryGiveUp: boolean;
   /** Some item reached ≥2 consecutive motor fails */
   hadRepeatedFailure: boolean;
+  /** LLM planner emitted illegal/unparseable action after retry */
+  invalidActionCount: number;
+  /** Episode ended because step cap was hit */
+  stepsExhausted: boolean;
 }
 
 export type TraceChannel = 'planner' | 'executor' | 'system';
@@ -238,6 +242,9 @@ export interface Scorecard {
   repeatedFailureHandledSafely: boolean;
   totalSteps: number;
   escalated: boolean;
+  /** True when episode ended by hitting the step cap */
+  stepsExhausted: boolean;
+  invalidActionCount: number;
 }
 
 export interface EpisodeResult {
@@ -278,4 +285,24 @@ export interface BatchResult {
   episodesPerSec: number;
   wallMs: number;
   episodeCount: number;
+}
+
+/**
+ * Committed artifact from offline LLM eval (scripts/eval-llm.ts).
+ * Loaded optionally by the dashboard — never produced client-side.
+ */
+export interface MeasuredRunResult {
+  modelId: string;
+  /** Short label for bars, e.g. "llama-3.1-8b" */
+  modelShortName: string;
+  domain: string;
+  episodeCount: number;
+  date: string;
+  promptTemplateHash: string;
+  metrics: PolicyMetrics;
+  invalidActionCount: number;
+  meanSteps: number;
+  meanTokensPerEpisode: number;
+  totalCostEstimate: number;
+  wallMs: number;
 }

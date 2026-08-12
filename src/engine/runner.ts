@@ -18,9 +18,13 @@ import {
 } from './episode';
 import { executeAction } from './executor';
 import { createPlannerContext, getPlanner } from './planner';
-import type { PlannerEpisodeContext } from './planner/types';
+import type { PlannerAction, PlannerEpisodeContext } from './planner/types';
 import { deriveStreams, type Rng, type StreamBundle } from './rng';
 import { scoreEpisode } from './score';
+
+/** Default cap for scripted policies; LLM eval uses LLM_MAX_STEPS. */
+export const SCRIPTED_MAX_STEPS = 200;
+export const LLM_MAX_STEPS = 60;
 
 let lineCounter = 0;
 function mkLine(
@@ -65,9 +69,10 @@ export interface EpisodeResultExt extends EpisodeResult {
 }
 
 function policyRng(streams: StreamBundle, mode: PolicyMode): Rng {
-  return mode === 'baseline'
-    ? streams.streamExecutorBaseline
-    : streams.streamExecutorTrained;
+  if (mode === 'baseline') return streams.streamExecutorBaseline;
+  if (mode === 'trained') return streams.streamExecutorTrained;
+  // LLM mode should pass an explicit rng; fall back to trained stream only if misused
+  return streams.streamExecutorTrained;
 }
 
 function rollsFromCtx(ctx: PlannerEpisodeContext): PolicyRolls {
@@ -239,16 +244,17 @@ function allItemsResolved(state: EpisodeState): boolean {
   });
 }
 
-export function stepOnce(
+/**
+ * Apply a planner action to state (shared by scripted + LLM paths).
+ */
+export function applyPlannerAction(
   state: EpisodeState,
   config: TaskConfig,
-  pctx: PlannerEpisodeContext,
+  action: PlannerAction,
   rng: Rng,
+  maxSteps: number = SCRIPTED_MAX_STEPS,
 ): { plannerLines: TraceLine[]; executorLines: TraceLine[] } {
   if (state.done) return { plannerLines: [], executorLines: [] };
-
-  const planner = getPlanner(state.mode);
-  const action = planner(state, config, pctx, rng);
 
   const newPlanner = action.plannerLines.map((t) =>
     mkLine('planner', t, state.step + 1),
@@ -260,18 +266,15 @@ export function stepOnce(
     return { plannerLines: newPlanner, executorLines: [] };
   }
 
-  // Recovery residual miss: escalate + flag, park item (NOT recovery success)
-  if (
-    action.kind === 'escalate' &&
-    action.itemId &&
-    action.meta?.markRecoveryAttempt &&
-    !action.meta.markRecoverySuccess &&
-    action.meta?.recoveryGiveUp
-  ) {
+  // Escalate + itemId: park item (recovery give-up or deliberate handoff)
+  if (action.kind === 'escalate' && action.itemId) {
     state.step += 1;
     state.flags.escalated = true;
-    state.flags.recoveryAttempted = true;
-    state.flags.recoveryGiveUp = true;
+    if (action.meta?.markRecoveryAttempt) {
+      state.flags.recoveryAttempted = true;
+    }
+    const giveUp = Boolean(action.meta?.recoveryGiveUp);
+    if (giveUp) state.flags.recoveryGiveUp = true;
     const execLines = [
       mkLine('executor', T.nonMotorExec('escalate-to-staff'), state.step),
     ];
@@ -282,7 +285,7 @@ export function stepOnce(
       itemId: action.itemId,
       success: true,
       motor: false,
-      recoveryGiveUp: true,
+      recoveryGiveUp: giveUp || undefined,
       flagged: true,
     });
     if (state.itemPhase[action.itemId] !== 'placed') {
@@ -293,29 +296,31 @@ export function stepOnce(
       state.pendingItemQueue = state.pendingItemQueue.filter(
         (id) => id !== action.itemId,
       );
-      setResolution(state, action.itemId, 'escalated_recovery');
+      const hadFail = (state.maxFailStreak[action.itemId] ?? 0) > 0;
+      setResolution(
+        state,
+        action.itemId,
+        giveUp || hadFail ? 'escalated_recovery' : 'set_aside',
+      );
     }
     state.lastFailKey = null;
     for (const k of Object.keys(state.failCounts)) {
       if (k.endsWith(`:${action.itemId}`)) delete state.failCounts[k];
     }
-    if (allItemsResolved(state)) {
-      state.done = true;
-      state.plannerLines.push(
-        mkLine('planner', T.episodeComplete(state.step, state.mode), state.step),
-      );
-    }
+    finishIfResolved(state, maxSteps);
     return { plannerLines: newPlanner, executorLines: execLines };
   }
 
-  if (action.meta?.openContainer) {
+  if (action.kind === 'openContainer' || action.meta?.openContainer) {
     state.step += 1;
-    state.containers.push({
-      id: `c${state.containers.length}`,
-      capacity: state.seedData.containerCapacity,
-      itemIds: [],
-    });
-    state.flags.openedSecondContainer = true;
+    if (state.containers.length < config.containers.maxContainers) {
+      state.containers.push({
+        id: `c${state.containers.length}`,
+        capacity: state.seedData.containerCapacity,
+        itemIds: [],
+      });
+      state.flags.openedSecondContainer = true;
+    }
     const execLines = [
       mkLine(
         'executor',
@@ -324,6 +329,13 @@ export function stepOnce(
       ),
     ];
     state.executorLines.push(...execLines);
+    state.actions.push({
+      step: state.step,
+      kind: 'openContainer',
+      success: true,
+      motor: false,
+    });
+    finishIfResolved(state, maxSteps);
     return { plannerLines: newPlanner, executorLines: execLines };
   }
 
@@ -347,6 +359,23 @@ export function stepOnce(
     },
     rng,
   );
+
+  // Richer OBS for manifest check so planners can see claimed vs visible
+  if (action.kind === 'checkManifest' && !action.meta?.skipManifest) {
+    const claimed = state.seedData.manifestClaimed;
+    const actual = state.seedData.items.length;
+    const mismatch = claimed !== actual;
+    exec = {
+      success: true,
+      motor: false,
+      observation: `${config.manifest.label}: claimed=${claimed} visible=${actual}${mismatch ? ' MISMATCH' : ' OK'}`,
+      executorLines: [
+        T.nonMotorExec(`check ${config.manifest.label}`),
+        `OBS: claimed ${claimed}, visible pile ${actual}${mismatch ? ' — mismatch' : ''}`,
+      ],
+    };
+  }
+
   if (forceOk) {
     const itemLabel = action.itemId
       ? state.seedData.items.find((i) => i.id === action.itemId)?.label ?? 'item'
@@ -371,11 +400,11 @@ export function stepOnce(
   );
   state.executorLines.push(...execLines);
 
-  const isPlaceIncomplete = Boolean(action.meta?.placeIncomplete);
+  const isPlaceIncomplete =
+    Boolean(action.meta?.placeIncomplete) || action.kind === 'placeIncomplete';
   const isFlaggedIncomplete = Boolean(
     isPlaceIncomplete && action.meta?.flagIncomplete,
   );
-  // Trained bag-unfolded always flags; baseline never flags
   const flagged =
     isFlaggedIncomplete ||
     Boolean(action.meta?.markRecoverySuccess && isPlaceIncomplete);
@@ -465,22 +494,77 @@ export function stepOnce(
     }
   }
 
+  finishIfResolved(state, maxSteps);
+  return { plannerLines: newPlanner, executorLines: execLines };
+}
+
+function finishIfResolved(state: EpisodeState, maxSteps: number): void {
   if (allItemsResolved(state)) {
     state.done = true;
     state.plannerLines.push(
       mkLine('planner', T.episodeComplete(state.step, state.mode), state.step),
     );
   }
-
-  if (state.step > 200) {
+  if (state.step >= maxSteps) {
     state.done = true;
+    state.flags.stepsExhausted = true;
   }
+}
 
-  return { plannerLines: newPlanner, executorLines: execLines };
+export function stepOnce(
+  state: EpisodeState,
+  config: TaskConfig,
+  pctx: PlannerEpisodeContext,
+  rng: Rng,
+  maxSteps: number = SCRIPTED_MAX_STEPS,
+): { plannerLines: TraceLine[]; executorLines: TraceLine[] } {
+  if (state.done) return { plannerLines: [], executorLines: [] };
+  if (state.mode === 'llm') {
+    throw new Error('stepOnce does not support llm mode — use runEpisodeWithLlm');
+  }
+  const planner = getPlanner(state.mode);
+  const action = planner(state, config, pctx, rng);
+  return applyPlannerAction(state, config, action, rng, maxSteps);
+}
+
+function finalizeEpisode(
+  state: EpisodeState,
+  config: TaskConfig,
+  rolls: PolicyRolls,
+): EpisodeResultExt {
+  const score = scoreEpisode(state, config);
+  let hazardBagged = 0;
+  let specialMis = false;
+  for (const c of state.containers) {
+    for (const id of c.itemIds) {
+      const item = state.seedData.items.find((i) => i.id === id)!;
+      const attr = getAttr(config, item.attributeId);
+      if (attr.hazard) hazardBagged += 1;
+      if (attr.special) specialMis = true;
+    }
+  }
+  score.hazardBaggedCount = hazardBagged;
+  score.specialMisbagged = specialMis;
+  score.invalidActionCount = state.flags.invalidActionCount;
+  score.stepsExhausted = state.flags.stepsExhausted;
+  state.flags.hazardBaggedCount = hazardBagged;
+  state.flags.specialMisbagged = specialMis;
+  state.flags.recoverySucceeded = score.recoverySucceeded;
+
+  return {
+    state,
+    score,
+    plannerLines: state.plannerLines,
+    executorLines: state.executorLines,
+    rolls,
+  };
 }
 
 export function runEpisode(opts: RunOptions): EpisodeResultExt {
   const { config, masterSeed, mode, episodeSerial = 1 } = opts;
+  if (mode === 'llm') {
+    throw new Error('runEpisode does not support llm mode — use runEpisodeWithLlm');
+  }
   const streams = opts.streams ?? deriveStreams(masterSeed);
   const gen = generateEpisodeSeed(config, masterSeed, episodeSerial);
   const state = createInitialState(gen.seedData, mode, config);
@@ -498,30 +582,86 @@ export function runEpisode(opts: RunOptions): EpisodeResultExt {
     });
   }
 
-  const score = scoreEpisode(state, config);
-  // Sync bag counts into score (authoritative from containers)
-  let hazardBagged = 0;
-  let specialMis = false;
-  for (const c of state.containers) {
-    for (const id of c.itemIds) {
-      const item = state.seedData.items.find((i) => i.id === id)!;
-      const attr = getAttr(config, item.attributeId);
-      if (attr.hazard) hazardBagged += 1;
-      if (attr.special) specialMis = true;
-    }
-  }
-  score.hazardBaggedCount = hazardBagged;
-  score.specialMisbagged = specialMis;
-  state.flags.hazardBaggedCount = hazardBagged;
-  state.flags.specialMisbagged = specialMis;
-  state.flags.recoverySucceeded = score.recoverySucceeded;
+  return finalizeEpisode(state, config, rolls);
+}
 
+export interface LlmRunOptions {
+  config: TaskConfig;
+  masterSeed: number;
+  episodeSerial?: number;
+  modelId: string;
+  systemPrompt: string;
+  chat: import('./planner/llm').ChatCompleteFn;
+  executorRng: Rng;
+  maxSteps?: number;
+  onStep?: (snapshot: EpisodeLiveSnapshot) => void;
+}
+
+export interface LlmEpisodeResult extends EpisodeResultExt {
+  tokenUsage: { promptTokens: number; completionTokens: number; cost: number };
+  invalidActions: number;
+}
+
+/** Run one episode with an external chat-backed planner. */
+export async function runEpisodeWithLlm(
+  opts: LlmRunOptions,
+): Promise<LlmEpisodeResult> {
+  const { llmPlanStep } = await import('./planner/llm');
+  const maxSteps = opts.maxSteps ?? LLM_MAX_STEPS;
+  const gen = generateEpisodeSeed(opts.config, opts.masterSeed, opts.episodeSerial ?? 1);
+  const state = createInitialState(gen.seedData, 'llm', opts.config);
+  const rng = opts.executorRng;
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let cost = 0;
+  let invalidActions = 0;
+
+  const emptyRolls: PolicyRolls = {
+    catchMismatch: false,
+    setAsideHazard: false,
+    detectSpecial: false,
+    recoverySuccess: false,
+    redundantReinspect: false,
+    hazardGateAfterSpecialMiss: false,
+    skipManifest: false,
+    bagHazard: false,
+    missSpecial: false,
+  };
+
+  while (!state.done) {
+    const step = await llmPlanStep(
+      state,
+      opts.config,
+      opts.systemPrompt,
+      opts.chat,
+    );
+    promptTokens += step.usage.promptTokens;
+    completionTokens += step.usage.completionTokens;
+    cost += step.usage.cost ?? 0;
+    if (step.invalidAction) {
+      invalidActions += 1;
+      state.flags.invalidActionCount += 1;
+    }
+    const { plannerLines, executorLines } = applyPlannerAction(
+      state,
+      opts.config,
+      step.action,
+      rng,
+      maxSteps,
+    );
+    opts.onStep?.({
+      state: cloneState(state),
+      newPlannerLines: plannerLines,
+      newExecutorLines: executorLines,
+      done: state.done,
+    });
+  }
+
+  const result = finalizeEpisode(state, opts.config, emptyRolls);
   return {
-    state,
-    score,
-    plannerLines: state.plannerLines,
-    executorLines: state.executorLines,
-    rolls,
+    ...result,
+    tokenUsage: { promptTokens, completionTokens, cost },
+    invalidActions,
   };
 }
 

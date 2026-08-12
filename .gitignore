@@ -4,3 +4,6 @@ dist
 *.local
 .vite
 *.tsbuildinfo
+# Offline eval artifacts (commit measured bars under public/results/)
+results/*
+!results/.gitkeep

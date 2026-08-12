@@ -37,6 +37,11 @@ export function deriveStreams(masterSeed: number): StreamBundle {
   };
 }
 
+/** Independent executor stream for an external/LLM planner (salt includes model id). */
+export function deriveLlmExecutorStream(masterSeed: number, modelId: string): Rng {
+  return mulberry32(hashSeed(masterSeed >>> 0, `exec-llm-${modelId}`));
+}
+
 export function randInt(rng: Rng, min: number, max: number): number {
   return min + Math.floor(rng() * (max - min + 1));
 }
