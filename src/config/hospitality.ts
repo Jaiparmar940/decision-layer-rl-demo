@@ -28,7 +28,7 @@ export const hospitalityConfig: TaskConfig = {
   specialItemEpisodeRate: 0.55,
   skills: [
     { id: 'pick', label: 'pick', baseFailRate: 0.06, motor: true, role: 'pick' },
-    { id: 'fold', label: 'fold', baseFailRate: 0.14, motor: true, role: 'finish' },
+    { id: 'fold', label: 'fold', baseFailRate: 0.22, motor: true, role: 'finish' },
     { id: 'bag', label: 'bag', baseFailRate: 0.08, motor: true, role: 'place' },
     { id: 'setAside', label: 'set-aside', baseFailRate: 0.04, motor: true, role: 'setAside' },
   ],
@@ -60,6 +60,7 @@ export const hospitalityConfig: TaskConfig = {
       detectSpecialItem: 0.95,
       recoverySuccess: 0.9,
       redundantReinspectEpisode: 0.15,
+      hazardGateAfterSpecialMiss: 0,
     },
   },
   timing: {

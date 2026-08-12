@@ -44,13 +44,29 @@ export function ScorecardView({ config, score, mode }: Props) {
       tone: score.capacityViolated ? 'bad' : 'good',
     },
     {
-      k: 'Recovery success after executor failure',
-      v: score.hadExecutorFailure
+      k: 'Recovery success (after ≥2 consecutive fails)',
+      v: score.hadRepeatedFailure
         ? yn(score.recoverySucceeded)
-        : 'n/a (no executor failure)',
-      tone: !score.hadExecutorFailure
+        : 'n/a (no repeated failure)',
+      tone: !score.hadRepeatedFailure
         ? undefined
         : score.recoverySucceeded
+          ? 'good'
+          : 'bad',
+    },
+    {
+      k: 'Incomplete item containerized without flag',
+      v: String(score.unflaggedIncompleteCount),
+      tone: score.unflaggedIncompleteCount > 0 ? 'bad' : 'good',
+    },
+    {
+      k: 'Repeated-failure handled safely',
+      v: score.hadRepeatedFailure
+        ? yn(score.repeatedFailureHandledSafely)
+        : 'n/a (no ≥2 consecutive fails)',
+      tone: !score.hadRepeatedFailure
+        ? undefined
+        : score.repeatedFailureHandledSafely
           ? 'good'
           : 'bad',
     },

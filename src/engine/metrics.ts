@@ -44,15 +44,24 @@ export function aggregateScores(
   const mismatchEps = scores.filter((s) => s.manifestMismatchPresent);
   const mismatchCaught = mismatchEps.filter((s) => s.manifestMismatchCaught).length;
 
-  const hazardEps = scores.filter((s) => s.hazardBaggedCount > 0).length;
+  const hazardPresentEps = scores.filter((s) => s.hazardPresent);
+  const hazardBaggedEps = hazardPresentEps.filter(
+    (s) => s.hazardBaggedCount > 0,
+  ).length;
 
   const specialEps = scores.filter((s) => s.specialPresent);
   const specialMis = specialEps.filter((s) => s.specialMisbagged).length;
 
   const capViol = scores.filter((s) => s.capacityViolated).length;
 
-  const failEps = scores.filter((s) => s.hadExecutorFailure);
-  const recoveryOk = failEps.filter((s) => s.recoverySucceeded).length;
+  const unflaggedEps = scores.filter((s) => s.unflaggedIncompleteCount > 0).length;
+
+  const repeatedEps = scores.filter((s) => s.hadRepeatedFailure);
+  // Recovery denom = repeated-failure episodes (where residual path applies)
+  const recoveryOk = repeatedEps.filter((s) => s.recoverySucceeded).length;
+  const repeatedSafe = repeatedEps.filter(
+    (s) => s.repeatedFailureHandledSafely,
+  ).length;
 
   const escalated = scores.filter((s) => s.escalated).length;
   const meanSteps =
@@ -68,10 +77,10 @@ export function aggregateScores(
       'episodes with a mismatch',
     ),
     hazardBaggedEpisodes: metric(
-      hazardEps,
-      n,
+      hazardBaggedEps,
+      hazardPresentEps.length,
       'Episodes with hazard item containerized',
-      'episodes',
+      'episodes containing ≥1 hazard item',
     ),
     specialMisbagged: metric(
       specialMis,
@@ -82,9 +91,21 @@ export function aggregateScores(
     capacityViolated: metric(capViol, n, 'Capacity violated', 'episodes'),
     recoverySuccess: metric(
       recoveryOk,
-      failEps.length,
+      repeatedEps.length,
       'Recovery success',
-      'episodes with ≥1 executor failure',
+      'episodes with ≥1 item failing ≥2 consecutive motor attempts',
+    ),
+    unflaggedIncomplete: metric(
+      unflaggedEps,
+      n,
+      'Incomplete item containerized without flag',
+      'episodes',
+    ),
+    repeatedFailureSafety: metric(
+      repeatedSafe,
+      repeatedEps.length,
+      'Repeated-failure episodes handled safely',
+      'episodes with ≥1 item failing ≥2 consecutive motor attempts',
     ),
     meanSteps,
     escalateRate: metric(escalated, n, 'Escalated', 'episodes'),
@@ -97,7 +118,8 @@ export function buildBatchResult(
   wallMs: number,
   config: TaskConfig,
 ): BatchResult {
-  const episodeCount = config.batch.episodes;
+  const episodeCount =
+    config.batch?.episodes ?? Math.max(baselineScores.length, trainedScores.length);
   const totalRuns = baselineScores.length + trainedScores.length;
   const episodesPerSec = wallMs > 0 ? (totalRuns / wallMs) * 1000 : 0;
 
@@ -106,7 +128,7 @@ export function buildBatchResult(
     trained: aggregateScores('trained', trainedScores),
     episodesPerSec,
     wallMs,
-    episodeCount,
+    episodeCount: baselineScores.length || episodeCount,
   };
 }
 

@@ -130,7 +130,7 @@ export const trainedPlanner: PlannerFn = (
 
     if (fails >= 2) {
       if (ctx.recoverySuccess) {
-        // bag-unfolded + flag success path
+        // bag-unfolded + flag — recovery success
         const placeSkill = skillIdForRole(config, 'place')!;
         return wrap({
           kind: 'placeIncomplete',
@@ -150,10 +150,11 @@ export const trainedPlanner: PlannerFn = (
             markRecoveryAttempt: true,
             markRecoverySuccess: true,
             placeIncomplete: true,
+            flagIncomplete: true,
           },
         });
       }
-      // residual: escalate and flag rather than looping
+      // residual 10%: escalate + flag — handled safely, but recovery FAILURE
       return wrap({
         kind: 'escalate',
         itemId: last.itemId,
@@ -170,7 +171,10 @@ export const trainedPlanner: PlannerFn = (
             itemLabel: ic.itemLabel,
           }),
         ],
-        meta: { markRecoveryAttempt: true },
+        meta: {
+          markRecoveryAttempt: true,
+          recoveryGiveUp: true,
+        },
       });
     }
   }
@@ -214,13 +218,17 @@ export const trainedPlanner: PlannerFn = (
           setAsideAction(state, config, itemId, 'special item detected'),
         );
       }
-      // residual miss — may still catch via hazard rule
-      if (trueA.hazard && ctx.setAsideHazard) {
+      // residual miss propagates — optional hazard-gate catch uses its own rate (default 0)
+      if (trueA.hazard && ctx.hazardGateAfterSpecialMiss) {
         return wrap(
-          setAsideAction(state, config, itemId, 'hazard gate (special missed)'),
+          setAsideAction(
+            state,
+            config,
+            itemId,
+            'hazard gate after special miss (config rate)',
+          ),
         );
       }
-      // fall through bag
       const motor = nextMotorForItem(state, config, itemId)!;
       return wrap({
         ...motor,

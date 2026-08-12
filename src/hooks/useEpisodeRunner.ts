@@ -61,6 +61,7 @@ function finalizeScore(state: EpisodeState, config: TaskConfig): Scorecard {
   }
   score.hazardBaggedCount = hazardBagged;
   score.specialMisbagged = specialMis;
+  score.hazardPresent = state.seedData.hasHazardItem;
   return score;
 }
 

@@ -153,6 +153,10 @@ export function createInitialState(
       hazardBaggedCount: 0,
       specialMisbagged: false,
       openedSecondContainer: false,
+      unflaggedIncompleteCount: 0,
+      flaggedIncompleteCount: 0,
+      recoveryGiveUp: false,
+      hadRepeatedFailure: false,
     },
     step: 0,
     done: false,
@@ -161,6 +165,10 @@ export function createInitialState(
     executorLines: [],
     pendingItemQueue: seedData.items.map((it) => it.id),
     failCounts: {},
+    maxFailStreak: Object.fromEntries(seedData.items.map((it) => [it.id, 0])),
+    itemResolution: Object.fromEntries(
+      seedData.items.map((it) => [it.id, 'pending' as const]),
+    ),
     lastFailKey: null,
   };
 }

@@ -108,12 +108,12 @@ export const baselinePlanner: PlannerFn = (
       });
     }
 
-    // Give up on item path: try place anyway or skip to next via force place incomplete? baseline bags unfolded poorly
+    // Double-fail: force-place incomplete WITHOUT flag (recovery failure)
     if (fails >= 2) {
       const placeSkill = skillIdForRole(config, 'place');
       if (placeSkill && state.itemPhase[last.itemId] !== 'placed') {
         return wrap({
-          kind: 'place',
+          kind: 'placeIncomplete',
           skillId: placeSkill,
           itemId: last.itemId,
           plannerLines: [
@@ -121,11 +121,15 @@ export const baselinePlanner: PlannerFn = (
               itemLabel: ic.itemLabel,
               skillLabel,
               attempt: fails,
-              decision: 'force place after repeated fail',
+              decision: 'force place incomplete — no flag',
               priorFailures: fails,
             }),
           ],
-          meta: { markRecoveryAttempt: true, placeIncomplete: true },
+          meta: {
+            markRecoveryAttempt: true,
+            placeIncomplete: true,
+            flagIncomplete: false,
+          },
         });
       }
     }

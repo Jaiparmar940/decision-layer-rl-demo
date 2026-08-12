@@ -14,6 +14,10 @@ export interface PlannerAction {
     markRecoveryAttempt?: boolean;
     markRecoverySuccess?: boolean;
     placeIncomplete?: boolean;
+    /** Trained bag-unfolded path always sets this */
+    flagIncomplete?: boolean;
+    /** Residual: escalate instead of recovering (recovery failure, safety ok) */
+    recoveryGiveUp?: boolean;
     forceDone?: boolean;
   };
 }
@@ -28,6 +32,7 @@ export interface PlannerEpisodeContext {
   detectSpecial: boolean;
   recoverySuccess: boolean;
   redundantReinspect: boolean;
+  hazardGateAfterSpecialMiss: boolean;
   didRedundantReinspect: boolean;
   didInitialInspect: boolean;
   didManifestStep: boolean;

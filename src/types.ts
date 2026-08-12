@@ -47,6 +47,11 @@ export interface PlannerRatesTrained {
   detectSpecialItem: number;
   recoverySuccess: number;
   redundantReinspectEpisode: number;
+  /**
+   * When detectSpecialItem fails on a special that is also a hazard,
+   * probability the hazard gate still catches it. Default 0 so misses propagate.
+   */
+  hazardGateAfterSpecialMiss: number;
 }
 
 export interface TaskConfig {
@@ -139,12 +144,21 @@ export interface EpisodeFlags {
   manifestMismatchCaught: boolean;
   escalated: boolean;
   recoveryAttempted: boolean;
+  /** Set during run; final value computed in scoreEpisode */
   recoverySucceeded: boolean;
   hadExecutorFailure: boolean;
   capacityViolated: boolean;
   hazardBaggedCount: number;
   specialMisbagged: boolean;
   openedSecondContainer: boolean;
+  /** placeIncomplete without flag/escalation */
+  unflaggedIncompleteCount: number;
+  /** placeIncomplete with flag */
+  flaggedIncompleteCount: number;
+  /** Escalated after repeated executor failure (recovery give-up) */
+  recoveryGiveUp: boolean;
+  /** Some item reached ≥2 consecutive motor fails */
+  hadRepeatedFailure: boolean;
 }
 
 export type TraceChannel = 'planner' | 'executor' | 'system';
@@ -164,7 +178,23 @@ export interface ActionRecord {
   success: boolean;
   motor: boolean;
   observation?: string;
+  /** Force-place / bag-unfolded path */
+  placeIncomplete?: boolean;
+  /** Incomplete place was flagged (trained bag-unfolded) */
+  flagged?: boolean;
+  /** Recovery residual: escalate instead of recovering */
+  recoveryGiveUp?: boolean;
 }
+
+/** How each item was ultimately resolved (for recovery / safety scoring) */
+export type ItemResolution =
+  | 'pending'
+  | 'normal'
+  | 'retry_success'
+  | 'flagged_incomplete'
+  | 'unflagged_incomplete'
+  | 'escalated_recovery'
+  | 'set_aside';
 
 export interface EpisodeState {
   seedData: EpisodeSeedData;
@@ -182,18 +212,28 @@ export interface EpisodeState {
   executorLines: TraceLine[];
   pendingItemQueue: string[];
   failCounts: Record<string, number>;
+  /** Peak consecutive motor fails per item id */
+  maxFailStreak: Record<string, number>;
+  itemResolution: Record<string, ItemResolution>;
   lastFailKey: string | null;
 }
 
 export interface Scorecard {
   manifestMismatchPresent: boolean;
   manifestMismatchCaught: boolean;
+  hazardPresent: boolean;
   hazardBaggedCount: number;
   specialPresent: boolean;
   specialMisbagged: boolean;
   capacityViolated: boolean;
   hadExecutorFailure: boolean;
   recoverySucceeded: boolean;
+  /** Count of unflagged force-place / bag-unfolded items this episode */
+  unflaggedIncompleteCount: number;
+  flaggedIncompleteCount: number;
+  hadRepeatedFailure: boolean;
+  /** Every repeated-fail item ended flagged, escalated, or resolved — never unflagged force-place */
+  repeatedFailureHandledSafely: boolean;
   totalSteps: number;
   escalated: boolean;
 }
@@ -222,6 +262,10 @@ export interface PolicyMetrics {
   specialMisbagged: MetricValue;
   capacityViolated: MetricValue;
   recoverySuccess: MetricValue;
+  /** Episodes with ≥1 unflagged incomplete placement / all episodes */
+  unflaggedIncomplete: MetricValue;
+  /** Repeated-fail episodes handled safely / episodes with ≥1 repeated failure */
+  repeatedFailureSafety: MetricValue;
   meanSteps: number;
   escalateRate: MetricValue;
 }

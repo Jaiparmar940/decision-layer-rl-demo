@@ -20,6 +20,7 @@ export function createPlannerContext(
       detectSpecial: false,
       recoverySuccess: false,
       redundantReinspect: false,
+      hazardGateAfterSpecialMiss: false,
       didRedundantReinspect: false,
       didInitialInspect: false,
       didManifestStep: false,
@@ -37,6 +38,10 @@ export function createPlannerContext(
     detectSpecial: chance(rng, t.detectSpecialItem),
     recoverySuccess: chance(rng, t.recoverySuccess),
     redundantReinspect: chance(rng, t.redundantReinspectEpisode),
+    hazardGateAfterSpecialMiss: chance(
+      rng,
+      t.hazardGateAfterSpecialMiss ?? 0,
+    ),
     didRedundantReinspect: false,
     didInitialInspect: false,
     didManifestStep: false,

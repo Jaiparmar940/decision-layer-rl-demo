@@ -103,9 +103,20 @@ export function BatchDashboard({ result }: Props) {
         invertGood
       />
       <BarPair
-        label="Recovery success after executor failure (higher better)"
+        label="Recovery success after repeated executor failure (higher better)"
         baseline={b.recoverySuccess}
         trained={t.recoverySuccess}
+      />
+      <BarPair
+        label="Incomplete item containerized without flag (lower better)"
+        baseline={b.unflaggedIncomplete}
+        trained={t.unflaggedIncomplete}
+        invertGood
+      />
+      <BarPair
+        label="Repeated-failure episodes handled safely (higher better)"
+        baseline={b.repeatedFailureSafety}
+        trained={t.repeatedFailureSafety}
       />
 
       <div className="metric-row">
