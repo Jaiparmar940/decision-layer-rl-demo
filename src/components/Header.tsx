@@ -1,4 +1,5 @@
 import type { PolicyMode, TaskConfig } from '../types';
+import logo from '../assets/snl-logo.png';
 import { StatusChip } from './StatusChip';
 
 interface Props {
@@ -30,6 +31,10 @@ export function Header({
 }: Props) {
   return (
     <header className="header">
+      <div className="brand" aria-label="Second Nature Labs">
+        <img className="brand-logo" src={logo} alt="" width={32} height={32} />
+        <span className="brand-name">Second Nature Labs</span>
+      </div>
       <div className="header-title">{config.meta.title}</div>
       <StatusChip title="Episode id and RNG seed">
         <strong>
