@@ -56,9 +56,10 @@ export function aggregateScores(
 
   const unflaggedEps = scores.filter((s) => s.unflaggedIncompleteCount > 0).length;
 
+  const failEps = scores.filter((s) => s.hadExecutorFailure);
+  const recoveryOk = failEps.filter((s) => s.recoverySucceeded).length;
+
   const repeatedEps = scores.filter((s) => s.hadRepeatedFailure);
-  // Recovery denom = repeated-failure episodes (where residual path applies)
-  const recoveryOk = repeatedEps.filter((s) => s.recoverySucceeded).length;
   const repeatedSafe = repeatedEps.filter(
     (s) => s.repeatedFailureHandledSafely,
   ).length;
@@ -91,9 +92,9 @@ export function aggregateScores(
     capacityViolated: metric(capViol, n, 'Capacity violated', 'episodes'),
     recoverySuccess: metric(
       recoveryOk,
-      repeatedEps.length,
+      failEps.length,
       'Recovery success',
-      'episodes with ≥1 item failing ≥2 consecutive motor attempts',
+      'episodes with ≥1 executor failure',
     ),
     unflaggedIncomplete: metric(
       unflaggedEps,

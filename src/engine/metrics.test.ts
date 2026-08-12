@@ -25,9 +25,9 @@ function sc(partial: Partial<Scorecard>): Scorecard {
 
 describe('dashboard denominators', () => {
   it('uses conditional denominators on a crafted set', () => {
-    // 10 episodes: 4 with mismatch (3 caught), 4 repeated-fail (2 recovered, 2 safe)
+    // 10 episodes: 4 with mismatch (3 caught), 3 with executor fail (2 recovered)
     // 5 with hazard present (1 bagged), 2 special (1 misbagged)
-    // 3 unflagged incomplete
+    // 3 unflagged incomplete, 4 repeated-fail (2 safe)
     const scores: Scorecard[] = [
       sc({
         manifestMismatchPresent: true,
@@ -72,7 +72,6 @@ describe('dashboard denominators', () => {
       sc({
         hadRepeatedFailure: true,
         repeatedFailureHandledSafely: true,
-        recoverySucceeded: false,
       }),
     ];
 
@@ -82,10 +81,10 @@ describe('dashboard denominators', () => {
     expect(m.manifestMismatchCaught.denominator).toBe(4);
     expect(m.manifestMismatchCaught.rate).toBeCloseTo(0.75);
 
-    // recovery denom = repeated-fail eps (4), num recovered (2)
+    // recovery denom = executor-fail eps (3), num recovered (2)
     expect(m.recoverySuccess.numerator).toBe(2);
-    expect(m.recoverySuccess.denominator).toBe(4);
-    expect(m.recoverySuccess.rate).toBeCloseTo(0.5);
+    expect(m.recoverySuccess.denominator).toBe(3);
+    expect(m.recoverySuccess.rate).toBeCloseTo(2 / 3);
 
     expect(m.capacityViolated.numerator).toBe(1);
     expect(m.capacityViolated.denominator).toBe(10);
@@ -93,7 +92,6 @@ describe('dashboard denominators', () => {
     expect(m.specialMisbagged.numerator).toBe(1);
     expect(m.specialMisbagged.denominator).toBe(2);
 
-    // hazard denom = episodes containing ≥1 hazard (5), num = bagged among those (1)
     expect(m.hazardBaggedEpisodes.numerator).toBe(1);
     expect(m.hazardBaggedEpisodes.denominator).toBe(5);
 
@@ -104,8 +102,8 @@ describe('dashboard denominators', () => {
     expect(m.repeatedFailureSafety.denominator).toBe(4);
 
     const formatted = formatMetric(m.recoverySuccess);
-    expect(formatted).toContain('2/4');
-    expect(formatted).toContain('≥2 consecutive');
+    expect(formatted).toContain('2/3');
+    expect(formatted).toContain('episodes with ≥1 executor failure');
   });
 
   it('renders n/a when denominator is 0', () => {

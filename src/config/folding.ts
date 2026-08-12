@@ -29,7 +29,7 @@ export const foldingConfig: TaskConfig = {
   skills: [
     { id: 'pick', label: 'pick', baseFailRate: 0.05, motor: true, role: 'pick' },
     { id: 'unfold', label: 'unfold', baseFailRate: 0.1, motor: true, role: 'prepare' },
-    { id: 'fold', label: 'fold', baseFailRate: 0.22, motor: true, role: 'finish' },
+    { id: 'fold', label: 'fold', baseFailRate: 0.28, motor: true, role: 'finish' },
     { id: 'stack', label: 'stack', baseFailRate: 0.09, motor: true, role: 'place' },
     { id: 'setAside', label: 'set-aside', baseFailRate: 0.04, motor: true, role: 'setAside' },
   ],
@@ -54,6 +54,7 @@ export const foldingConfig: TaskConfig = {
       bagHazardItem: 0.3,
       missSpecialItem: 0.5,
       identicalRetryOnFail: 1.0,
+      flagOnRepeatedFail: 0.15,
     },
     trained: {
       catchManifestMismatch: 0.95,

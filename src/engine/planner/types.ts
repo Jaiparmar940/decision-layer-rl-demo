@@ -33,6 +33,8 @@ export interface PlannerEpisodeContext {
   recoverySuccess: boolean;
   redundantReinspect: boolean;
   hazardGateAfterSpecialMiss: boolean;
+  /** Baseline: flag incomplete on ≥2-fail path this episode */
+  flagOnRepeatedFail: boolean;
   didRedundantReinspect: boolean;
   didInitialInspect: boolean;
   didManifestStep: boolean;

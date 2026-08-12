@@ -109,6 +109,32 @@ export const trainedPlanner: PlannerFn = (
     const skillLabel =
       config.skills.find((s) => s.id === last.skillId)?.label ?? last.skillId;
 
+    // Residual miss (~10% of episodes): escalate+flag rather than recover.
+    // Counts as handled-safely but recovery FAILURE for the dashboard metric.
+    if (!ctx.recoverySuccess) {
+      return wrap({
+        kind: 'escalate',
+        itemId: last.itemId,
+        plannerLines: [
+          T.recoveryDecision({
+            itemLabel: ic.itemLabel,
+            skillLabel,
+            attempt: fails,
+            decision: 'escalate + flag (recovery residual miss)',
+            priorFailures: fails,
+          }),
+          T.escalateLine({
+            reason: 'executor failure — recovery residual',
+            itemLabel: ic.itemLabel,
+          }),
+        ],
+        meta: {
+          markRecoveryAttempt: true,
+          recoveryGiveUp: true,
+        },
+      });
+    }
+
     if (fails === 1) {
       // reposition once then retry
       return wrap({
@@ -129,51 +155,27 @@ export const trainedPlanner: PlannerFn = (
     }
 
     if (fails >= 2) {
-      if (ctx.recoverySuccess) {
-        // bag-unfolded + flag — recovery success
-        const placeSkill = skillIdForRole(config, 'place')!;
-        return wrap({
-          kind: 'placeIncomplete',
-          skillId: placeSkill,
-          itemId: last.itemId,
-          plannerLines: [
-            T.recoveryDecision({
-              itemLabel: ic.itemLabel,
-              skillLabel,
-              attempt: fails,
-              decision: 'bag-unfolded + flag (recovery ok)',
-              priorFailures: fails,
-            }),
-            T.placeIncompleteNote(ic.itemLabel),
-          ],
-          meta: {
-            markRecoveryAttempt: true,
-            markRecoverySuccess: true,
-            placeIncomplete: true,
-            flagIncomplete: true,
-          },
-        });
-      }
-      // residual 10%: escalate + flag — handled safely, but recovery FAILURE
+      // bag-unfolded + flag — recovery success
+      const placeSkill = skillIdForRole(config, 'place')!;
       return wrap({
-        kind: 'escalate',
+        kind: 'placeIncomplete',
+        skillId: placeSkill,
         itemId: last.itemId,
         plannerLines: [
           T.recoveryDecision({
             itemLabel: ic.itemLabel,
             skillLabel,
             attempt: fails,
-            decision: 'escalate + flag (recovery residual miss)',
+            decision: 'bag-unfolded + flag (recovery ok)',
             priorFailures: fails,
           }),
-          T.escalateLine({
-            reason: 'repeated executor failure',
-            itemLabel: ic.itemLabel,
-          }),
+          T.placeIncompleteNote(ic.itemLabel),
         ],
         meta: {
           markRecoveryAttempt: true,
-          recoveryGiveUp: true,
+          markRecoverySuccess: true,
+          placeIncomplete: true,
+          flagIncomplete: true,
         },
       });
     }

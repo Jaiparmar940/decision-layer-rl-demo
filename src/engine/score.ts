@@ -2,15 +2,15 @@ import type { EpisodeState, Scorecard, TaskConfig } from '../types';
 import { getAttr } from './episode';
 
 /**
- * Recovery success — among episodes with ≥1 item that failed ≥2 consecutive
- * motor attempts:
- *   Success — every such item resolved by retry success or flagged
- *             bag-unfolded / place-incomplete (not give-up escalate,
- *             not unflagged force-place).
- *   Failure — any unflagged force-place, or recovery give-up escalate.
+ * Recovery success — among episodes with ≥1 executor failure:
+ *   Success — every failed motor step ultimately resolved via successful
+ *             retry/reposition, flagged-incomplete placement, or a non-give-up
+ *             escalation path.
+ *   Failure — any unflagged force-place, abandoned/unresolved item, or
+ *             trained residual recovery give-up (escalate instead of recovering).
  *
- * Escalation after residual recovery miss is "handled" for repeated-failure
- * safety but is NOT recovery success. Net: trained ≈ recoverySuccess config.
+ * Single-fail-then-retry-succeeds counts as success.
+ * recoveryGiveUp is handled-safely for repeatedFailureSafety but NOT recovery.
  */
 export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard {
   let hazardBaggedCount = 0;
@@ -68,21 +68,47 @@ export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard
     });
   }
 
+  const abandoned = state.seedData.items.some((it) => {
+    const p = state.itemPhase[it.id];
+    return p !== 'placed' && p !== 'aside';
+  });
+
   const recoveryGiveUp =
     state.flags.recoveryGiveUp ||
     state.actions.some((a) => a.recoveryGiveUp);
 
-  // Recovery success only defined on repeated-failure episodes
+  // Any item that had a motor failure must end resolved (not unflagged / pending)
+  const failedItemIds = new Set<string>();
+  for (const a of state.actions) {
+    if (a.motor && !a.success && a.itemId) failedItemIds.add(a.itemId);
+  }
+  for (const [id, streak] of Object.entries(state.maxFailStreak)) {
+    if (streak > 0) failedItemIds.add(id);
+  }
+
+  const failureChainsResolved = [...failedItemIds].every((id) => {
+    const res = state.itemResolution[id];
+    // escalated_recovery alone is a give-up path — counted via recoveryGiveUp flag
+    return (
+      res === 'retry_success' ||
+      res === 'flagged_incomplete' ||
+      res === 'set_aside' ||
+      res === 'normal' ||
+      res === 'escalated_recovery'
+    );
+  });
+
   let recoverySucceeded = false;
-  if (hadRepeatedFailure) {
-    const allRecovered = repeatedFailItemIds.every((id) => {
-      const res = state.itemResolution[id];
-      return res === 'flagged_incomplete' || res === 'retry_success';
-    });
+  if (state.flags.hadExecutorFailure) {
     recoverySucceeded =
-      allRecovered &&
       unflaggedIncompleteCount === 0 &&
-      !recoveryGiveUp;
+      !abandoned &&
+      !recoveryGiveUp &&
+      failureChainsResolved &&
+      [...failedItemIds].every((id) => {
+        const p = state.itemPhase[id];
+        return p === 'placed' || p === 'aside';
+      });
   }
 
   return {

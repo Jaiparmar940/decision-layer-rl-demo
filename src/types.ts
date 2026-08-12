@@ -39,6 +39,8 @@ export interface PlannerRatesBaseline {
   bagHazardItem: number;
   missSpecialItem: number;
   identicalRetryOnFail: number;
+  /** On ≥2 consecutive fails, P(flag incomplete place) instead of unflagged force-place */
+  flagOnRepeatedFail: number;
 }
 
 export interface PlannerRatesTrained {

@@ -108,10 +108,11 @@ export const baselinePlanner: PlannerFn = (
       });
     }
 
-    // Double-fail: force-place incomplete WITHOUT flag (recovery failure)
+    // Double-fail: episode-level flag roll (naive planner sometimes correct)
     if (fails >= 2) {
       const placeSkill = skillIdForRole(config, 'place');
       if (placeSkill && state.itemPhase[last.itemId] !== 'placed') {
+        const doFlag = ctx.flagOnRepeatedFail;
         return wrap({
           kind: 'placeIncomplete',
           skillId: placeSkill,
@@ -121,14 +122,17 @@ export const baselinePlanner: PlannerFn = (
               itemLabel: ic.itemLabel,
               skillLabel,
               attempt: fails,
-              decision: 'force place incomplete — no flag',
+              decision: doFlag
+                ? 'force place incomplete + flag (lucky)'
+                : 'force place incomplete — no flag',
               priorFailures: fails,
             }),
           ],
           meta: {
             markRecoveryAttempt: true,
             placeIncomplete: true,
-            flagIncomplete: false,
+            flagIncomplete: doFlag,
+            markRecoverySuccess: doFlag,
           },
         });
       }

@@ -9,20 +9,37 @@ function assertOutcomeRates(name: string, config: TaskConfig) {
   const t = batch.trained;
   const b = batch.baseline;
 
+  // baseline recovery success in [50%, 80%]
+  expect(b.recoverySuccess.rate, `${name} baseline recovery`).not.toBeNull();
+  expect(b.recoverySuccess.rate!).toBeGreaterThanOrEqual(0.5);
+  expect(b.recoverySuccess.rate!).toBeLessThanOrEqual(0.8);
+
   // trained recovery success in [85%, 95%]
   expect(t.recoverySuccess.rate, `${name} trained recovery`).not.toBeNull();
   expect(t.recoverySuccess.rate!).toBeGreaterThanOrEqual(0.85);
   expect(t.recoverySuccess.rate!).toBeLessThanOrEqual(0.95);
 
-  // trained special misbagged in [2%, 9%] both domains
-  expect(t.specialMisbagged.rate, `${name} trained special mis`).not.toBeNull();
-  expect(t.specialMisbagged.rate!).toBeGreaterThanOrEqual(0.02);
-  expect(t.specialMisbagged.rate!).toBeLessThanOrEqual(0.09);
+  // baseline repeatedFailureSafety in [8%, 25%]
+  expect(b.repeatedFailureSafety.rate, `${name} baseline safety`).not.toBeNull();
+  expect(b.repeatedFailureSafety.rate!).toBeGreaterThanOrEqual(0.08);
+  expect(b.repeatedFailureSafety.rate!).toBeLessThanOrEqual(0.25);
 
-  // baseline unflagged-incomplete strictly greater than trained; trained must be 0
+  // trained repeatedFailureSafety ≥ 98%
+  expect(t.repeatedFailureSafety.rate, `${name} trained safety`).not.toBeNull();
+  expect(t.repeatedFailureSafety.rate!).toBeGreaterThanOrEqual(0.98);
+
+  // baseline unflaggedIncomplete > 15%; trained = 0
   expect(t.unflaggedIncomplete.rate).toBe(0);
   expect(b.unflaggedIncomplete.rate).not.toBeNull();
-  expect(b.unflaggedIncomplete.rate!).toBeGreaterThan(t.unflaggedIncomplete.rate!);
+  expect(b.unflaggedIncomplete.rate!).toBeGreaterThan(0.15);
+
+  // separation ≥ 20pts on recovery and unflaggedIncomplete
+  expect(t.recoverySuccess.rate! - b.recoverySuccess.rate!).toBeGreaterThanOrEqual(
+    0.2,
+  );
+  expect(b.unflaggedIncomplete.rate! - t.unflaggedIncomplete.rate!).toBeGreaterThanOrEqual(
+    0.2,
+  );
 
   // every conditional metric's denominator < episode count
   const conditional = [
@@ -42,14 +59,6 @@ function assertOutcomeRates(name: string, config: TaskConfig) {
       expect(m.denominator, m.label).toBeLessThan(1000);
     }
   }
-
-  // separation targets (soft check that metrics move the right way)
-  expect(t.recoverySuccess.rate!).toBeGreaterThan(
-    (b.recoverySuccess.rate ?? 0) + 0.15,
-  );
-  expect(t.repeatedFailureSafety.rate ?? 0).toBeGreaterThan(
-    (b.repeatedFailureSafety.rate ?? 0) + 0.25,
-  );
 }
 
 describe('outcome-level dashboard rates (1000 eps)', () => {

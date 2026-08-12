@@ -44,11 +44,11 @@ export function ScorecardView({ config, score, mode }: Props) {
       tone: score.capacityViolated ? 'bad' : 'good',
     },
     {
-      k: 'Recovery success (after ≥2 consecutive fails)',
-      v: score.hadRepeatedFailure
+      k: 'Recovery success after executor failure',
+      v: score.hadExecutorFailure
         ? yn(score.recoverySucceeded)
-        : 'n/a (no repeated failure)',
-      tone: !score.hadRepeatedFailure
+        : 'n/a (no executor failure)',
+      tone: !score.hadExecutorFailure
         ? undefined
         : score.recoverySucceeded
           ? 'good'
