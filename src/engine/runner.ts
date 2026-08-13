@@ -18,7 +18,7 @@ import {
 } from './episode';
 import { executeAction } from './executor';
 import { createPlannerContext, getPlanner } from './planner';
-import type { PlannerAction, PlannerEpisodeContext, PlannerFn } from './planner/types';
+import type { PlannerAction, PlannerEpisodeContext } from './planner/types';
 import { deriveStreams, type Rng, type StreamBundle } from './rng';
 import { scoreEpisode } from './score';
 import {
@@ -404,52 +404,6 @@ export function applyPlannerAction(
     };
   }
 
-  if (action.meta?.forceFail && action.skillId && action.itemId) {
-    const item = state.seedData.items.find((i) => i.id === action.itemId);
-    const itemLabel = item?.label ?? 'item';
-    const skill = config.skills.find((s) => s.id === action.skillId);
-    const skillLabel = skill?.label ?? action.skillId;
-    const attr = item ? getAttr(config, item.attributeId) : null;
-    const failKey = `${action.skillId}:${action.itemId}`;
-    const attempt = (state.failCounts[failKey] ?? 0) + 1;
-    const observation = T.obsPickFail({
-      skillLabel,
-      itemLabel,
-      attributeChip: attr?.chip ?? '—',
-      attempt,
-    });
-    exec = {
-      success: false,
-      motor: true,
-      observation,
-      executorLines: [T.executorMotor(skillLabel, itemLabel, false), observation],
-    };
-  }
-
-  if (action.meta?.forceSuccess && action.skillId && action.itemId && !action.meta?.forceFail) {
-    const itemLabel =
-      state.seedData.items.find((i) => i.id === action.itemId)?.label ?? 'item';
-    const skillLabel =
-      config.skills.find((s) => s.id === action.skillId)?.label ?? action.skillId;
-    exec = {
-      success: true,
-      motor: true,
-      executorLines: [T.executorMotor(skillLabel, itemLabel, true)],
-    };
-  }
-
-  if (action.meta?.holdPhase && action.skillId && action.itemId) {
-    const itemLabel =
-      state.seedData.items.find((i) => i.id === action.itemId)?.label ?? 'item';
-    const skillLabel =
-      config.skills.find((s) => s.id === action.skillId)?.label ?? action.skillId;
-    exec = {
-      success: true,
-      motor: true,
-      executorLines: [T.executorMotor(`reposition ${skillLabel}`, itemLabel, true)],
-    };
-  }
-
   state.step += 1;
   const execLines = exec.executorLines.map((t) =>
     mkLine('executor', t, state.step),
@@ -513,34 +467,28 @@ export function applyPlannerAction(
     const failKey = `${action.skillId}:${action.itemId ?? 'none'}`;
     const hadPriorFail = (state.failCounts[failKey] ?? 0) > 0;
 
-    if (action.meta?.holdPhase) {
-      // Demo reposition: visible success, but the garment is still unpicked
-      // and the fail streak stays so the next retry can fail again.
-    } else if (isPlaceIncomplete) {
+    if (isPlaceIncomplete) {
       applyMotorSuccess(state, config, 'placeIncomplete', action.skillId, action.itemId, {
         placeIncomplete: true,
         flagged,
         hadPriorFail,
         containerId: action.containerId,
       });
-      delete state.failCounts[failKey];
-      state.lastFailKey = null;
     } else if (action.kind === 'reposition') {
       applyMotorSuccess(state, config, 'reposition', action.skillId, action.itemId, {
         hadPriorFail,
         containerId: action.containerId,
       });
-      delete state.failCounts[failKey];
-      state.lastFailKey = null;
     } else {
       applyMotorSuccess(state, config, action.kind, action.skillId, action.itemId, {
         placeIncomplete: false,
         hadPriorFail,
         containerId: action.containerId,
       });
-      delete state.failCounts[failKey];
-      state.lastFailKey = null;
     }
+
+    delete state.failCounts[failKey];
+    state.lastFailKey = null;
   }
 
   if (isPlaceIncomplete && exec.success && action.itemId) {
@@ -583,13 +531,12 @@ export function stepOnce(
   pctx: PlannerEpisodeContext,
   rng: Rng,
   maxSteps: number = SCRIPTED_MAX_STEPS,
-  plannerOverride?: PlannerFn,
 ): { plannerLines: TraceLine[]; executorLines: TraceLine[] } {
   if (state.done) return { plannerLines: [], executorLines: [] };
   if (state.mode === 'llm') {
     throw new Error('stepOnce does not support llm mode — use runEpisodeWithLlm');
   }
-  const planner = plannerOverride ?? getPlanner(state.mode);
+  const planner = getPlanner(state.mode);
   const action = planner(state, config, pctx, rng);
   return applyPlannerAction(state, config, action, rng, maxSteps);
 }

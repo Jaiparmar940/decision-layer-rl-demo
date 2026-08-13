@@ -1,6 +1,6 @@
 # Decision-Layer RL Environment Demo
 
-> **`demo/live-video` — keep unmerged.** Live env is a frozen 10-garment hospitality pile (seed 4242). Baseline always runs the untrained script; trained always runs the same pile after training. Served at [snlabs.dev/hospitality-env](https://snlabs.dev/hospitality-env/). Batch/eval paths are unchanged.
+> **`demo/live-video` — keep unmerged.** Served at [snlabs.dev/hospitality-env](https://snlabs.dev/hospitality-env/). Live env uses the same seeded scripted Baseline/Trained planners as main.
 
 Single-page interactive demo: a **task-level RL environment** for the decision layer (planner) of a deployed service robot. Everything runs client-side — no backend, no physics, no robot time.
 
