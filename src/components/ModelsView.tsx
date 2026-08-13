@@ -40,14 +40,14 @@ export function ModelsView() {
         <section className="panel-like models-key-panel">
           <div className="detail-kicker">API KEY</div>
           <p className="key-help">
-            Paste an OpenRouter / provider key for offline eval scripts. Not sent
-            by this static web app — stored in <code>localStorage</code> only.
+            Paste a provider API key for offline eval scripts. Not sent by this
+            static web app — stored in <code>localStorage</code> only.
           </p>
           <textarea
             className="key-input"
             rows={4}
             spellCheck={false}
-            placeholder="sk-or-…"
+            placeholder="paste key…"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             onBlur={(e) => setApiKey(e.target.value.trim())}
