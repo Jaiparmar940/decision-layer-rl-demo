@@ -461,6 +461,15 @@ a.brand:hover .brand-name {
   border-color: rgba(61, 214, 140, 0.35);
 }
 
+.item-card.pick-fail {
+  border-color: var(--red);
+  background: rgba(255, 92, 92, 0.12);
+}
+
+.item-card.pick-fail .id {
+  color: var(--red);
+}
+
 .item-card .id {
   font-size: 10px;
   color: var(--text-dim);
@@ -558,6 +567,12 @@ a.brand:hover .brand-name {
 
 .log-line.obs {
   color: var(--green);
+}
+
+.log-line.executor.fail,
+.log-line.obs.fail {
+  color: var(--red);
+  border-left-color: var(--red);
 }
 
 .log-empty {
