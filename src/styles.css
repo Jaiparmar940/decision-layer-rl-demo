@@ -137,7 +137,6 @@ button.primary {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  margin-right: 18px;
 }
 
 .brand-logo {
@@ -176,6 +175,8 @@ button.primary {
   align-items: center;
   gap: 10px 14px;
   min-width: 0;
+  /* Push domain title + episode chip to the right, away from brand */
+  margin-left: auto;
 }
 
 .header-title {
@@ -192,7 +193,6 @@ button.primary {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
 }
 
 .chip {
@@ -247,10 +247,7 @@ button.primary {
   }
 
   .header-meta {
-    flex-basis: 100%;
-  }
-
-  .header-controls {
+    flex-basis: auto;
     margin-left: 0;
   }
 
