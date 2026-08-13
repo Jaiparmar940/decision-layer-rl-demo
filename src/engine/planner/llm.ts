@@ -39,11 +39,13 @@ export interface LlmActionJson {
   action: ActionKind;
   skillId?: string;
   itemId?: string | null;
+  /** Optional target container for place / placeIncomplete (defaults to active). */
+  containerId?: string;
   reason: string;
   flagIncomplete?: boolean;
 }
 
-const MOTOR_NEEDS_ITEM: ActionKind[] = [
+export const MOTOR_NEEDS_ITEM: ActionKind[] = [
   'pick',
   'prepare',
   'finish',
@@ -77,6 +79,8 @@ export function parseLlmActionJson(raw: string): LlmActionJson {
       obj.itemId === null || obj.itemId === undefined
         ? (obj.itemId as null | undefined)
         : String(obj.itemId),
+    containerId:
+      typeof obj.containerId === 'string' ? obj.containerId : undefined,
     reason: obj.reason,
     flagIncomplete:
       typeof obj.flagIncomplete === 'boolean' ? obj.flagIncomplete : undefined,
@@ -141,10 +145,19 @@ export function validateLlmAction(
     }
   }
 
+  if (draft.containerId) {
+    if (!state.containers.some((c) => c.id === draft.containerId)) {
+      return `unknown containerId "${draft.containerId}"`;
+    }
+    if (draft.action !== 'place' && draft.action !== 'placeIncomplete') {
+      return `containerId is only valid on place / placeIncomplete`;
+    }
+  }
+
   return null;
 }
 
-function toPlannerAction(
+export function toPlannerAction(
   draft: LlmActionJson,
   state: EpisodeState,
   config: TaskConfig,
@@ -198,6 +211,7 @@ function toPlannerAction(
     kind: draft.action,
     skillId,
     itemId: draft.itemId,
+    containerId: draft.containerId,
     plannerLines: [draft.reason],
     meta: Object.keys(meta).length ? meta : undefined,
   };

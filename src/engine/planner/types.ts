@@ -5,6 +5,7 @@ export interface PlannerAction {
   kind: ActionKind;
   skillId?: string;
   itemId?: string | null;
+  containerId?: string;
   plannerLines: string[];
   /** Side-effect hints applied by runner before/after exec */
   meta?: {

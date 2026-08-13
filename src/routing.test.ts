@@ -32,5 +32,6 @@ describe('deep-link view + domain', () => {
     expect(resolveView('?view=evals')).toBe('evals');
     expect(resolveView('?view=curves')).toBe('curves');
     expect(resolveView('?view=models')).toBe('models');
+    expect(resolveView('?view=manual')).toBe('manual');
   });
 });

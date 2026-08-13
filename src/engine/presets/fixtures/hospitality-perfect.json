@@ -1,0 +1,129 @@
+{
+  "id": "hospitality-perfect",
+  "domain": "hospitality",
+  "kind": "perfect",
+  "masterSeed": 1000,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "checkManifest",
+      "reason": "perfect: verify ticket"
+    },
+    {
+      "action": "reInspect",
+      "reason": "perfect: inspect"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-1",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "bag",
+      "itemId": "item-1",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "bag",
+      "itemId": "item-2",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-3",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "bag",
+      "itemId": "item-4",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "bag",
+      "itemId": "item-4",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-5",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-6",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-7",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-8",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "place",
+      "skillId": "bag",
+      "itemId": "item-8",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    }
+  ]
+}

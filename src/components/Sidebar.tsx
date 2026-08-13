@@ -75,6 +75,15 @@ function IconCurves() {
   );
 }
 
+function IconManual() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="4" width="14" height="16" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M9 9h6M9 12h6M9 15h4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 function IconModels() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -89,6 +98,7 @@ function IconModels() {
 const NAV: NavItem[] = [
   { id: 'live', label: 'Live env', icon: <IconLive /> },
   { id: 'results', label: 'Batch results', icon: <IconResults /> },
+  { id: 'manual', label: 'Manual run', icon: <IconManual /> },
   { id: 'episodes', label: 'Episode review', icon: <IconEpisodes /> },
   { id: 'evals', label: 'Model evals', icon: <IconEvals /> },
   { id: 'curves', label: 'Learning curves', icon: <IconCurves /> },

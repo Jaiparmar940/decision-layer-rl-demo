@@ -4,7 +4,8 @@ export type AppView =
   | 'episodes'
   | 'evals'
   | 'curves'
-  | 'models';
+  | 'models'
+  | 'manual';
 
 const VIEWS: readonly AppView[] = [
   'live',
@@ -13,6 +14,7 @@ const VIEWS: readonly AppView[] = [
   'evals',
   'curves',
   'models',
+  'manual',
 ] as const;
 
 /**
@@ -50,4 +52,16 @@ export function resolveDomainId(search?: string): string {
   const id = (params.get('domain') ?? 'hospitality').toLowerCase();
   if (id === 'folding') return 'folding';
   return 'hospitality';
+}
+
+/** Update domain query param without dropping view (and other) params. */
+export function setDomainInUrl(domainId: string): void {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (domainId === 'hospitality') {
+    url.searchParams.delete('domain');
+  } else {
+    url.searchParams.set('domain', domainId);
+  }
+  window.history.replaceState({}, '', url.toString());
 }

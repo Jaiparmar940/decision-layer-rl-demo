@@ -1,0 +1,216 @@
+{
+  "id": "folding-perfect",
+  "domain": "folding",
+  "kind": "perfect",
+  "masterSeed": 1000,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "checkManifest",
+      "reason": "perfect: verify ticket"
+    },
+    {
+      "action": "reInspect",
+      "reason": "perfect: inspect"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-1",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-1",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-2",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-2",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-3",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "reposition",
+      "skillId": "unfold",
+      "itemId": "item-3",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-3",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-3",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-4",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-4",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-5",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-6",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-6",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-6",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-7",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-7",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-7",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-8",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-8",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "c0",
+      "reason": "perfect: place"
+    }
+  ]
+}

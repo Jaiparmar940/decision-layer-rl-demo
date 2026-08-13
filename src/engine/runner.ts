@@ -115,8 +115,12 @@ function placeItem(
   state: EpisodeState,
   config: TaskConfig,
   itemId: string,
+  containerId?: string,
 ): void {
-  const c = activeContainer(state);
+  const c =
+    (containerId
+      ? state.containers.find((x) => x.id === containerId)
+      : undefined) ?? activeContainer(state);
   if (c.itemIds.length >= c.capacity) {
     state.flags.capacityViolated = true;
   }
@@ -142,6 +146,7 @@ function applyMotorSuccess(
     placeIncomplete?: boolean;
     flagged?: boolean;
     hadPriorFail?: boolean;
+    containerId?: string;
   },
 ): void {
   if (!itemId) return;
@@ -209,7 +214,7 @@ function applyMotorSuccess(
         return;
       }
       if (skill?.role === 'place') {
-        placeItem(state, config, itemId);
+        placeItem(state, config, itemId, opts?.containerId);
         if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
         else if (state.itemResolution[itemId] === 'pending') {
           setResolution(state, itemId, 'normal');
@@ -219,7 +224,7 @@ function applyMotorSuccess(
     }
 
     if (opts?.placeIncomplete || kind === 'place' || kind === 'placeIncomplete') {
-      placeItem(state, config, itemId);
+      placeItem(state, config, itemId, opts?.containerId);
       if (opts?.placeIncomplete) {
         if (opts.flagged) {
           state.flags.flaggedIncompleteCount += 1;
@@ -414,6 +419,7 @@ export function applyPlannerAction(
     kind: action.kind,
     skillId: action.skillId,
     itemId: action.itemId,
+    containerId: action.containerId,
     success: exec.success,
     motor: exec.motor,
     observation: exec.observation,
@@ -461,15 +467,18 @@ export function applyPlannerAction(
         placeIncomplete: true,
         flagged,
         hadPriorFail,
+        containerId: action.containerId,
       });
     } else if (action.kind === 'reposition') {
       applyMotorSuccess(state, config, 'reposition', action.skillId, action.itemId, {
         hadPriorFail,
+        containerId: action.containerId,
       });
     } else {
       applyMotorSuccess(state, config, action.kind, action.skillId, action.itemId, {
         placeIncomplete: false,
         hadPriorFail,
+        containerId: action.containerId,
       });
     }
 
@@ -479,7 +488,7 @@ export function applyPlannerAction(
 
   if (isPlaceIncomplete && exec.success && action.itemId) {
     if (state.itemPhase[action.itemId] !== 'placed') {
-      placeItem(state, config, action.itemId);
+      placeItem(state, config, action.itemId, action.containerId);
       if (flagged) {
         if (state.itemResolution[action.itemId] !== 'flagged_incomplete') {
           state.flags.flaggedIncompleteCount += 1;

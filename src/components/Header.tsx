@@ -24,6 +24,7 @@ const VIEW_CHIP: Partial<Record<AppView, string>> = {
   evals: 'MODEL COMPARISON',
   curves: 'LEARNING CURVES',
   models: 'REGISTRY // LOCAL KEYS',
+  manual: 'MANUAL RUN // SAME EVAL PATH',
 };
 
 export function Header({

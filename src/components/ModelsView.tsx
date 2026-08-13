@@ -59,6 +59,12 @@ export function ModelsView() {
               Clear
             </button>
           </div>
+          <button type="button" className="primary" disabled={!apiKey} title={!apiKey ? 'Paste a key to enable provider calls' : undefined}>
+            Provider eval (browser)
+          </button>
+          {!apiKey ? (
+            <p className="key-help">Keyed features stay disabled until a key is pasted at runtime.</p>
+          ) : null}
         </section>
       </div>
     </div>

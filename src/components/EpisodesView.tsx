@@ -1,6 +1,10 @@
 import type { TaskConfig } from '../types';
 import { useMemo, useState } from 'react';
 import { SimLabel } from './SimLabel';
+import {
+  parseTranscriptJson,
+  type EpisodeTranscript,
+} from '../engine/transcript';
 
 interface Props {
   config: TaskConfig;
@@ -45,6 +49,28 @@ export function EpisodesView({ config }: Props) {
   );
   const [selectedId, setSelectedId] = useState(rows[0]?.id ?? '');
   const selected = rows.find((r) => r.id === selectedId) ?? rows[0];
+  const [loaded, setLoaded] = useState<EpisodeTranscript | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    setLoadError(null);
+    try {
+      const text = await file.text();
+      if (file.name.endsWith('.md')) {
+        setLoadError('Load the .transcript.json (markdown is display-only)');
+        return;
+      }
+      const parsed = parseTranscriptJson(JSON.parse(text) as unknown);
+      if (!parsed) {
+        setLoadError('Not a v1 episode transcript');
+        return;
+      }
+      setLoaded(parsed);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'failed to parse');
+    }
+  };
 
   return (
     <div className="page-view episodes-view">
@@ -52,11 +78,50 @@ export function EpisodesView({ config }: Props) {
         <div>
           <h1 className="page-h1">EPISODE REVIEW</h1>
           <p className="page-sub">
-            Browse seeded episodes, inspect outcomes, queue re-runs.
+            Browse seeded episodes, or load a manual/LLM .transcript.json.
           </p>
         </div>
+        <label className="file-load">
+          Load transcript
+          <input
+            type="file"
+            accept=".json,.md,application/json"
+            onChange={(e) => onFile(e.target.files?.[0])}
+          />
+        </label>
         <SimLabel />
       </header>
+      {loadError && <p className="manual-error">{loadError}</p>}
+      {loaded && (
+        <div className="panel-like transcript-loaded">
+          <div className="detail-kicker">LOADED TRANSCRIPT</div>
+          <h2 className="detail-title">
+            {loaded.episodeId} · {loaded.domain} · seed {loaded.masterSeed}
+          </h2>
+          <p>
+            source {loaded.source}
+            {loaded.presetId ? ` / ${loaded.presetId}` : ''} · ended {loaded.endedBy} ·{' '}
+            {loaded.steps.length} recorded steps
+          </p>
+          <ol className="action-history">
+            {loaded.steps.map((s) => (
+              <li key={s.index}>
+                <span className="hist-step">{s.outcome?.step ?? s.index + 1}</span>
+                <span>
+                  {s.action.action}
+                  {s.action.itemId ? ` ${s.action.itemId}` : ''}
+                </span>
+                <span>{s.outcome?.success === false ? 'fail' : 'ok'}</span>
+              </li>
+            ))}
+          </ol>
+          {loaded.scorecard && (
+            <pre className="payload-pre">
+              {JSON.stringify(loaded.scorecard, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
 
       <div className="episodes-layout">
         <div className="episodes-list" role="list">

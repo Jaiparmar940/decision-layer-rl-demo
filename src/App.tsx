@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resolveDomain } from './config';
-import { resolveView, setViewInUrl, type AppView } from './routing';
+import { resolveView, setDomainInUrl, setViewInUrl, type AppView } from './routing';
+import { ManualRunView } from './components/ManualRunView';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -20,7 +21,8 @@ import { loadMeasuredResults } from './measured/loadMeasured';
 import type { MeasuredRunResult } from './types';
 
 export default function App() {
-  const config = useMemo(() => resolveDomain(), []);
+  const [domainId, setDomainId] = useState(() => resolveDomain().meta.id);
+  const config = useMemo(() => resolveDomain(`?domain=${domainId}`), [domainId]);
   const [view, setViewState] = useState<AppView>(() => resolveView());
   const runner = useEpisodeRunner(config);
   const [measured, setMeasured] = useState<MeasuredRunResult[] | null>(null);
@@ -63,6 +65,15 @@ export default function App() {
         <div className="app-body">
           {view === 'results' ? (
             <ResultsView config={config} load={resultsLoad} />
+          ) : view === 'manual' ? (
+            <ManualRunView
+              key={domainId}
+              domainId={domainId}
+              onDomain={(id) => {
+                setDomainId(id);
+                setDomainInUrl(id);
+              }}
+            />
           ) : view === 'episodes' ? (
             <EpisodesView config={config} />
           ) : view === 'evals' ? (
@@ -83,19 +94,17 @@ export default function App() {
                 <ExecutorPanel config={config} lines={runner.executorLines} />
               </main>
 
-              {(runner.score || runner.batch) && (
-                <div className="lower">
-                  {runner.batch ? (
-                    <BatchDashboard result={runner.batch} measured={measured} />
-                  ) : runner.score ? (
-                    <ScorecardView
-                      config={config}
-                      score={runner.score}
-                      mode={runner.mode}
-                    />
-                  ) : null}
-                </div>
-              )}
+              <div className="lower">
+                {runner.batch ? (
+                  <BatchDashboard result={runner.batch} measured={measured} />
+                ) : (
+                  <ScorecardView
+                    config={config}
+                    score={runner.score}
+                    mode={runner.mode}
+                  />
+                )}
+              </div>
             </>
           )}
 

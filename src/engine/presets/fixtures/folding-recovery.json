@@ -1,0 +1,313 @@
+{
+  "id": "folding-recovery",
+  "domain": "folding",
+  "kind": "recovery",
+  "masterSeed": 1005,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "checkManifest",
+      "reason": "recovery: verify ticket"
+    },
+    {
+      "action": "reInspect",
+      "reason": "recovery: inspect"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-1",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-1",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "containerId": "c0",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-3",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-3",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-3",
+      "containerId": "c0",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-4",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-4",
+      "containerId": "c0",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-6",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-6",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-6",
+      "containerId": "c0",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-7",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-7",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-7",
+      "containerId": "c0",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-8",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-8",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "openContainer",
+      "reason": "recovery: open container"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "c1",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-9",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-9",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "reposition",
+      "skillId": "unfold",
+      "itemId": "item-9",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-9",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-9",
+      "containerId": "c1",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-10",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-10",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-10",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-10",
+      "containerId": "c1",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-2",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-2",
+      "containerId": "c1",
+      "flagIncomplete": true,
+      "reason": "recovery: flag after repeated failure"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-5",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "prepare",
+      "skillId": "unfold",
+      "itemId": "item-5",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-5",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-5",
+      "reason": "recovery: set aside exception"
+    }
+  ]
+}

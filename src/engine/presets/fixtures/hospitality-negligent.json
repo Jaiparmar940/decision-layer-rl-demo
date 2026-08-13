@@ -1,0 +1,65 @@
+{
+  "id": "hospitality-negligent",
+  "domain": "hospitality",
+  "kind": "negligent",
+  "masterSeed": 1001,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-1",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-2",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-3",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-4",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-5",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-6",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "bag",
+      "itemId": "item-7",
+      "containerId": "c0",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    }
+  ]
+}

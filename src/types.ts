@@ -181,6 +181,7 @@ export interface ActionRecord {
   kind: ActionKind;
   skillId?: string;
   itemId?: string | null;
+  containerId?: string;
   success: boolean;
   motor: boolean;
   observation?: string;
