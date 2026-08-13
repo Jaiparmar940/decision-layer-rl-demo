@@ -96,7 +96,11 @@ export default function App() {
 
               <div className="lower">
                 {runner.batch ? (
-                  <BatchDashboard result={runner.batch} measured={measured} />
+                  <BatchDashboard
+                    result={runner.batch}
+                    measured={measured}
+                    scoring={config.scoring}
+                  />
                 ) : (
                   <ScorecardView
                     config={config}

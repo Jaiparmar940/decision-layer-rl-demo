@@ -1,4 +1,5 @@
 import type { TaskConfig } from '../types';
+import { DEFAULT_SCORING } from './scoring';
 
 export const hospitalityConfig: TaskConfig = {
   meta: {
@@ -75,4 +76,5 @@ export const hospitalityConfig: TaskConfig = {
     itemLabel: 'GARMENT',
     itemLabelPlural: 'GARMENTS',
   },
+  scoring: DEFAULT_SCORING,
 };

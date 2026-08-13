@@ -1,32 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Scorecard } from '../types';
 import { classifyEpisodeCell } from './episodeCell';
+import { emptyScorecard } from './score';
 
-function sc(partial: Partial<Scorecard>): Scorecard {
-  return {
-    manifestMismatchPresent: false,
-    manifestMismatchCaught: false,
-    hazardPresent: false,
-    hazardBaggedCount: 0,
-    specialPresent: false,
-    specialMisbagged: false,
-    capacityViolated: false,
-    hadExecutorFailure: false,
-    recoverySucceeded: false,
-    unflaggedIncompleteCount: 0,
-    flaggedIncompleteCount: 0,
-    hadRepeatedFailure: false,
-    repeatedFailureHandledSafely: false,
-    totalSteps: 10,
-    escalated: false,
-    stepsExhausted: false,
-    invalidActionCount: 0,
-    ...partial,
-  };
-}
+const sc = emptyScorecard;
 
 describe('episode grid classification', () => {
-  it('maps crafted scorecards to clean / minor / unflagged', () => {
+  it('maps crafted scorecards to clean / minor / unflagged / incomplete', () => {
     expect(classifyEpisodeCell(sc({}))).toBe('clean');
 
     expect(
@@ -100,5 +79,15 @@ describe('episode grid classification', () => {
         }),
       ),
     ).toBe('clean');
+
+    expect(
+      classifyEpisodeCell(
+        sc({
+          taskCompleted: false,
+          itemsResolved: 0,
+          stepsExhausted: true,
+        }),
+      ),
+    ).toBe('incomplete');
   });
 });

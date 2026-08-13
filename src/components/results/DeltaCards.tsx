@@ -70,14 +70,57 @@ function DeltaCard({ title, baseline, trained, lowerIsBetter }: CardProps) {
 }
 
 interface Props {
+  composite: {
+    baseline: { mean: number; stdev: number };
+    trained: { mean: number; stdev: number };
+  };
   unflagged: { baseline: MetricValue; trained: MetricValue };
   recovery: { baseline: MetricValue; trained: MetricValue };
   safety: { baseline: MetricValue; trained: MetricValue };
 }
 
-export function DeltaCards({ unflagged, recovery, safety }: Props) {
+function CompositeDelta({
+  baseline,
+  trained,
+}: {
+  baseline: { mean: number; stdev: number };
+  trained: { mean: number; stdev: number };
+}) {
+  const d = Math.round(trained.mean - baseline.mean);
+  const good = d >= 0;
+  return (
+    <div className="delta-card composite-delta">
+      <div className="delta-card-title">Composite (0–100, tunable)</div>
+      <div className="delta-card-nums">
+        <div className="delta-side baseline">
+          <div className="delta-big">{Math.round(baseline.mean)}</div>
+          <div className="delta-frac mono">
+            {baseline.mean.toFixed(1)} ± {baseline.stdev.toFixed(1)}
+          </div>
+          <div className="delta-pol">BASELINE</div>
+        </div>
+        <div className="delta-vs">vs</div>
+        <div className="delta-side trained">
+          <div className="delta-big">{Math.round(trained.mean)}</div>
+          <div className="delta-frac mono">
+            {trained.mean.toFixed(1)} ± {trained.stdev.toFixed(1)}
+          </div>
+          <div className="delta-pol">TRAINED</div>
+        </div>
+      </div>
+      <div className={`delta-chip${good ? ' good' : ' bad'}`}>
+        {d > 0 ? '+' : ''}
+        {d} pts
+      </div>
+      <SimLabel />
+    </div>
+  );
+}
+
+export function DeltaCards({ composite, unflagged, recovery, safety }: Props) {
   return (
     <div className="delta-cards">
+      <CompositeDelta baseline={composite.baseline} trained={composite.trained} />
       <DeltaCard
         title="Unflagged incomplete items containerized"
         baseline={unflagged.baseline}

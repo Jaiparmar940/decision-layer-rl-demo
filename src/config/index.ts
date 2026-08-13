@@ -21,3 +21,4 @@ export function listDomains(): string[] {
 }
 
 export { hospitalityConfig, foldingConfig };
+export { DEFAULT_SCORING, scoringOf } from './scoring';

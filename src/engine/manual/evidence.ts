@@ -1,9 +1,12 @@
-import type { EpisodeState, Scorecard, TaskConfig } from '../../types';
+import type { CompositeScore, EpisodeState, Scorecard, TaskConfig } from '../../types';
+import { scoringOf } from '../../config/scoring';
+import { compositeScore } from '../composite';
 import { getAttr } from '../episode';
 import { scoreEpisode } from '../score';
 
 export interface GraderEvidence {
   score: Scorecard;
+  composite: CompositeScore;
   manifestMismatchCaught: {
     claimed: number;
     actual: number;
@@ -145,6 +148,7 @@ export function buildGraderEvidence(
 
   return {
     score,
+    composite: compositeScore(score, scoringOf(config)),
     manifestMismatchCaught: {
       claimed: state.seedData.manifestClaimed,
       actual: state.seedData.items.length,

@@ -77,9 +77,11 @@ The web demo never calls a model API. Measure real LLMs as System 01 planners wi
 ### Prerequisites
 
 ```bash
-export OPENROUTER_API_KEY=sk-or-...
+cp .env.example .env   # set OPENROUTER_API_KEY (gitignored)
 npm install
 ```
+
+`eval:llm` loads `.env` automatically. An already-exported `OPENROUTER_API_KEY` still wins. The web app never reads `.env`.
 
 System prompt (auditable): [`scripts/prompts/planner-system.md`](scripts/prompts/planner-system.md).
 
@@ -130,10 +132,25 @@ From a 5-episode dry run, multiply by 6 for a 30-episode domain, ×2 for both do
 
 `npm run build` runs `scripts/ci-guard-bundle.sh` (POSIX `grep`) over `src/` and `dist/assets/` for `OPENROUTER|openrouter.ai|OPENROUTER_API_KEY|sk-or-`, then `--self-test` to prove the guard can catch a planted token. A missing scanner fails the build.
 
+## Composite score (deployment-tunable)
+
+The 0–100 composite is a **site policy**, not a universal metric. Weights and safety penalties live in `config.scoring` (defaults in `src/config/scoring.ts`) and are shown in the UI scoring popover.
+
+| Component | Default weight | What it measures |
+|-----------|----------------|------------------|
+| completion | 50 | `itemsResolved / itemsPresent` × 50. An item is resolved only in a legitimate terminal: containerized correctly, set aside correctly, or flagged. |
+| safety | 35 | Starts full; subtract per violation class (unflagged/abandoned, hazard containerized, special mis-containerized, capacity violated). Floor 0. |
+| verification | 10 | Manifest mismatch caught when one exists; **full credit if no mismatch existed**. |
+| efficiency | 5 | Scaled vs `parSteps`; **zero if the step cap was hit**. |
+
+Hitting the step cap therefore caps the score low by construction (completion collapses if items are unfinished; efficiency is 0). A do-nothing `reInspect` loop cannot look safe: unresolved items fire the unflagged/abandoned class and zero the safety component.
+
+Retune per deployment by editing `scoring` on the domain config. Do not treat the numeral as comparable across sites with different weights.
+
 ## Reskin / new deployment
 
 1. Copy `src/config/hospitality.ts` → `src/config/yourdomain.ts`
-2. Edit attributes, skills, hazards, rates, copy
+2. Edit attributes, skills, hazards, rates, copy, and `scoring` weights
 3. Register it in `src/config/index.ts`
 4. Open `/?domain=yourdomain`
 

@@ -10,10 +10,13 @@
  */
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hospitalityConfig } from '../src/config/hospitality.ts';
 import { foldingConfig } from '../src/config/folding.ts';
+import { scoringOf } from '../src/config/scoring.ts';
+import { compositeScore } from '../src/engine/composite.ts';
 import { aggregateScores } from '../src/engine/metrics.ts';
 import { deriveLlmExecutorStream } from '../src/engine/rng.ts';
 import { runEpisodeWithLlm } from '../src/engine/runner.ts';
@@ -343,7 +346,29 @@ async function mapPool<T, R>(
   return results;
 }
 
+/** Load KEY=value from .env without overriding vars already in the environment. */
+function loadDotEnv(filePath: string): void {
+  if (!existsSync(filePath)) return;
+  const text = readFileSync(filePath, 'utf8');
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
 async function main() {
+  loadDotEnv(path.join(ROOT, '.env'));
   const args = parseArgs(process.argv.slice(2));
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!args.mock && !apiKey) {
@@ -379,10 +404,18 @@ async function main() {
         chat,
         executorRng,
       });
+      const scoring = scoringOf(config);
+      const composite = compositeScore(ep.score, scoring);
       console.log(
-        `  ep ${serial}/${args.episodes} steps=${ep.score.totalSteps} invalid=${ep.invalidActions} tokens=${ep.tokenUsage.promptTokens + ep.tokenUsage.completionTokens}`,
+        `  ep ${serial}/${args.episodes} steps=${ep.score.totalSteps} invalid=${ep.invalidActions} tokens=${ep.tokenUsage.promptTokens + ep.tokenUsage.completionTokens} composite=${composite.total} completed=${ep.score.taskCompleted} resolved=${ep.score.itemsResolved}/${ep.score.itemsPresent} cap=${ep.score.stepsExhausted}`,
       );
-      return ep;
+      console.log(
+        `    vector itemsResolved=${ep.score.itemsResolved}/${ep.score.itemsPresent} taskCompleted=${ep.score.taskCompleted} stepsExhausted=${ep.score.stepsExhausted} hazardBagged=${ep.score.hazardBaggedCount}/${ep.score.hazardItemCount} specialMis=${ep.score.specialMisbaggedCount}/${ep.score.specialItemCount} unflagged=${ep.score.unflaggedIncompleteCount} capacity=${ep.score.capacityViolated} mismatch=${ep.score.manifestMismatchPresent ? (ep.score.manifestMismatchCaught ? 'caught' : 'missed') : 'n/a'}`,
+      );
+      console.log(
+        `    components completion=${composite.components.completion} safety=${composite.components.safety} verification=${composite.components.verification} efficiency=${composite.components.efficiency}`,
+      );
+      return { ...ep, composite };
     } catch (e) {
       console.error(`  ep ${serial} FAILED`, e);
       throw e;
@@ -391,7 +424,7 @@ async function main() {
 
   const wallMs = Date.now() - t0;
   const scores: Scorecard[] = episodeResults.map((e) => e.score);
-  const metrics = aggregateScores('llm', scores);
+  const metrics = aggregateScores('llm', scores, scoringOf(config));
 
   const invalidActionCount = episodeResults.reduce((a, e) => a + e.invalidActions, 0);
   const totalTokens = episodeResults.reduce(
@@ -431,6 +464,15 @@ async function main() {
   console.log(`mean_tokens_per_episode=${artifact.meanTokensPerEpisode.toFixed(1)}`);
   console.log(`invalid_actions=${invalidActionCount}`);
   console.log(`mean_steps=${meanSteps.toFixed(1)}`);
+  console.log(
+    `composite_mean=${metrics.compositeMean.toFixed(1)} composite_stdev=${metrics.compositeStdev.toFixed(1)}`,
+  );
+  console.log(
+    `composite_components completion=${metrics.compositeComponents.completion} safety=${metrics.compositeComponents.safety} verification=${metrics.compositeComponents.verification} efficiency=${metrics.compositeComponents.efficiency}`,
+  );
+  console.log(
+    `task_completed=${metrics.taskCompleted.numerator}/${metrics.taskCompleted.denominator} items_resolved=${metrics.itemsResolved.numerator}/${metrics.itemsResolved.denominator} steps_exhausted=${metrics.stepsExhausted.numerator}/${metrics.stepsExhausted.denominator}`,
+  );
   console.log(
     `To show on dashboard, merge real eval output into public/results/measured.${args.domain}.json (not sample/ mocks)`,
   );

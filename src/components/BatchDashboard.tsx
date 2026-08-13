@@ -1,11 +1,15 @@
-import type { BatchResult, MeasuredRunResult, MetricValue } from '../types';
+import type { BatchResult, MeasuredRunResult, MetricValue, PolicyMetrics, ScoringConfig } from '../types';
 import { formatMetric } from '../engine/metrics';
+import { CompositeNumeral } from './CompositeNumeral';
+import { ScoringPopover } from './ScoringPopover';
+import { DEFAULT_SCORING } from '../config/scoring';
 import { MeasuredLabel } from './MeasuredLabel';
 import { SimLabel } from './SimLabel';
 
 interface Props {
   result: BatchResult;
   measured?: MeasuredRunResult[] | null;
+  scoring?: ScoringConfig;
 }
 
 function pctOf(m: MetricValue): number | null {
@@ -60,7 +64,7 @@ function MetricBlock({
     !(measured ?? []).some((m) => {
       const key = metricKeyFromLabel(baseline.label);
       const mv = key ? m.metrics[key] : null;
-      return mv && mv.denominator > 0;
+      return mv && typeof mv === 'object' && 'denominator' in mv && mv.denominator > 0;
     });
 
   return (
@@ -72,7 +76,7 @@ function MetricBlock({
       {(measured ?? []).map((run) => {
         const key = metricKeyFromLabel(baseline.label);
         const mv = key ? run.metrics[key] : undefined;
-        if (!mv) return null;
+        if (!mv || typeof mv !== 'object' || !('rate' in mv)) return null;
         return (
           <div key={run.modelId + run.date} className="metric-detail measured-detail">
             MEASURED — {run.modelShortName}, {run.episodeCount} eps — {formatMetric(mv)}
@@ -81,7 +85,7 @@ function MetricBlock({
       })}
       {(measured ?? []).length > 0 ? <MeasuredLabel /> : null}
       {allZero ? (
-        <div className="bar-na">n/a (0 episodes)</div>
+        <div className="bar-na">n/a (0 episodes — not scored; inaction ≠ virtue)</div>
       ) : (
         <div className="bars">
           <BarTrack label="BASELINE" pct={bPct} variant="baseline" />
@@ -89,7 +93,7 @@ function MetricBlock({
           {(measured ?? []).map((run) => {
             const key = metricKeyFromLabel(baseline.label);
             const mv = key ? run.metrics[key] : undefined;
-            if (!mv) return null;
+            if (!mv || typeof mv !== 'object' || !('rate' in mv)) return null;
             return (
               <BarTrack
                 key={run.modelId + '-bar-' + baseline.label}
@@ -114,6 +118,9 @@ type MetricKey = keyof Pick<
   | 'recoverySuccess'
   | 'unflaggedIncomplete'
   | 'repeatedFailureSafety'
+  | 'taskCompleted'
+  | 'itemsResolved'
+  | 'stepsExhausted'
 >;
 
 function metricKeyFromLabel(label: string): MetricKey | null {
@@ -125,19 +132,32 @@ function metricKeyFromLabel(label: string): MetricKey | null {
     'Recovery success': 'recoverySuccess',
     'Incomplete item containerized without flag': 'unflaggedIncomplete',
     'Repeated-failure episodes handled safely': 'repeatedFailureSafety',
+    'Task completed': 'taskCompleted',
+    'Items resolved (legitimate terminal)': 'itemsResolved',
+    'Step cap hit': 'stepsExhausted',
   };
   return map[label] ?? null;
 }
 
-export function BatchDashboard({ result, measured }: Props) {
+function policyComposite(m: PolicyMetrics) {
+  return {
+    total: Math.round(m.compositeMean),
+    components: m.compositeComponents,
+  };
+}
+
+export function BatchDashboard({ result, measured, scoring = DEFAULT_SCORING }: Props) {
   const { baseline: b, trained: t } = result;
   const runs = measured ?? [];
+  const bIncomplete = (b.taskCompleted.numerator ?? 0) === 0 && b.episodes > 0;
+  const tIncomplete = (t.taskCompleted.numerator ?? 0) === 0 && t.episodes > 0;
 
   return (
     <div className="batch-dash">
       <h2>
         BATCH EVAL // BASELINE VS TRAINED
         {runs.length > 0 ? ' VS MEASURED' : ''}
+        <ScoringPopover scoring={scoring} />
       </h2>
       <div className="batch-meta">
         <span className="chip">
@@ -158,6 +178,63 @@ export function BatchDashboard({ result, measured }: Props) {
         {runs.length > 0 ? <MeasuredLabel /> : null}
       </div>
 
+      <div className="composite-row">
+        <div className={`composite-card${bIncomplete ? ' incomplete' : ''}`}>
+          {bIncomplete ? <div className="incomplete-banner">INCOMPLETE</div> : null}
+          <CompositeNumeral
+            value={policyComposite(b)}
+            label={`BASELINE · ${b.compositeMean.toFixed(1)} ± ${b.compositeStdev.toFixed(1)}`}
+            size="md"
+          />
+        </div>
+        <div className={`composite-card${tIncomplete ? ' incomplete' : ''}`}>
+          {tIncomplete ? <div className="incomplete-banner">INCOMPLETE</div> : null}
+          <CompositeNumeral
+            value={policyComposite(t)}
+            label={`TRAINED · ${t.compositeMean.toFixed(1)} ± ${t.compositeStdev.toFixed(1)}`}
+            size="md"
+          />
+        </div>
+        {runs.map((r) => {
+          const inc =
+            (r.metrics.taskCompleted?.numerator ?? 0) === 0 && r.episodeCount > 0;
+          const hasComposite = typeof r.metrics.compositeMean === 'number';
+          if (!hasComposite) return null;
+          return (
+            <div
+              key={r.modelId + '-comp'}
+              className={`composite-card measured${inc ? ' incomplete' : ''}`}
+            >
+              {inc ? <div className="incomplete-banner">INCOMPLETE</div> : null}
+              <CompositeNumeral
+                value={policyComposite(r.metrics)}
+                label={`M:${r.modelShortName} · ${r.metrics.compositeMean.toFixed(1)} ± ${r.metrics.compositeStdev.toFixed(1)}`}
+                size="md"
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <MetricBlock
+        label="Task completed (higher better)"
+        baseline={b.taskCompleted}
+        trained={t.taskCompleted}
+        measured={runs}
+      />
+      <MetricBlock
+        label="Items resolved (legitimate terminal) (higher better)"
+        baseline={b.itemsResolved}
+        trained={t.itemsResolved}
+        measured={runs}
+      />
+      <MetricBlock
+        label="Step cap hit (lower better)"
+        baseline={b.stepsExhausted}
+        trained={t.stepsExhausted}
+        measured={runs}
+        invertGood
+      />
       <MetricBlock
         label="Manifest mismatch caught (higher better)"
         baseline={b.manifestMismatchCaught}

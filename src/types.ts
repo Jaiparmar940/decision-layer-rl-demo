@@ -43,6 +43,40 @@ export interface PlannerRatesBaseline {
   flagOnRepeatedFail: number;
 }
 
+export interface ScoringWeights {
+  completion: number;
+  safety: number;
+  verification: number;
+  efficiency: number;
+}
+
+/** Per-class subtractors from the safety weight (floor 0). */
+export interface SafetyPenalties {
+  unflaggedIncomplete: number;
+  hazardContainerized: number;
+  specialMiscontainerized: number;
+  capacityViolated: number;
+}
+
+export interface ScoringConfig {
+  weights: ScoringWeights;
+  safetyPenalties: SafetyPenalties;
+  /** Steps at or below this get full efficiency credit. */
+  parSteps: number;
+}
+
+export interface CompositeComponents {
+  completion: number;
+  safety: number;
+  verification: number;
+  efficiency: number;
+}
+
+export interface CompositeScore {
+  total: number;
+  components: CompositeComponents;
+}
+
 export interface PlannerRatesTrained {
   catchManifestMismatch: number;
   setAsideHazard: number;
@@ -103,6 +137,11 @@ export interface TaskConfig {
     itemLabel: string;
     itemLabelPlural: string;
   };
+  /**
+   * Deployment-tunable composite policy. Not a universal metric —
+   * operators set weights/penalties per site. See README.
+   */
+  scoring: ScoringConfig;
 }
 
 export interface Item {
@@ -229,9 +268,15 @@ export interface Scorecard {
   manifestMismatchPresent: boolean;
   manifestMismatchCaught: boolean;
   hazardPresent: boolean;
+  /** Hazard items in the episode (denominator for hazardBaggedCount) */
+  hazardItemCount: number;
   hazardBaggedCount: number;
   specialPresent: boolean;
+  /** Special items in the episode (denominator for specialMisbagged) */
+  specialItemCount: number;
   specialMisbagged: boolean;
+  /** Special items that were containerized (for n/k display) */
+  specialMisbaggedCount: number;
   capacityViolated: boolean;
   hadExecutorFailure: boolean;
   recoverySucceeded: boolean;
@@ -246,6 +291,18 @@ export interface Scorecard {
   /** True when episode ended by hitting the step cap */
   stepsExhausted: boolean;
   invalidActionCount: number;
+  /** Items present this episode (denominator for itemsResolved) */
+  itemsPresent: number;
+  /**
+   * Items that ended in a legitimate terminal state:
+   * containerized correctly / set aside correctly / flagged.
+   */
+  itemsResolved: number;
+  /**
+   * All items resolved AND episode ended via finish or a justified
+   * escalate — not step cap, not abandonment.
+   */
+  taskCompleted: boolean;
 }
 
 export interface EpisodeResult {
@@ -262,6 +319,13 @@ export interface MetricValue {
   rate: number | null;
   label: string;
   denomLabel: string;
+  /**
+   * Always-present note so a 0 numerator cannot be read as virtue
+   * when the denominator is 0 or the denom episodes were incomplete.
+   */
+  denomNote: string;
+  /** How many denominator episodes had taskCompleted = false */
+  incompleteInDenominator: number;
 }
 
 export interface PolicyMetrics {
@@ -278,6 +342,15 @@ export interface PolicyMetrics {
   repeatedFailureSafety: MetricValue;
   meanSteps: number;
   escalateRate: MetricValue;
+  /** Items in a legitimate terminal / items present (summed across episodes) */
+  itemsResolved: MetricValue;
+  /** Episodes that finished the task / all episodes */
+  taskCompleted: MetricValue;
+  /** Episodes that hit the step cap / all episodes */
+  stepsExhausted: MetricValue;
+  compositeMean: number;
+  compositeStdev: number;
+  compositeComponents: CompositeComponents;
 }
 
 export interface BatchResult {

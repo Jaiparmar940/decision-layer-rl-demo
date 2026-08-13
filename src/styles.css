@@ -575,12 +575,17 @@ a.brand:hover .brand-name {
 }
 
 .scorecard h2,
-.batch-dash h2 {
+.batch-dash h2,
+.grader-report h2 {
   margin: 0 0 10px;
   font-size: 11px;
   letter-spacing: 0.1em;
   font-weight: 600;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .score-grid {
@@ -1146,6 +1151,11 @@ a.brand:hover .brand-name {
 
 .ep-cell.ep-unflagged {
   background: #c43c28;
+}
+
+.ep-cell.ep-incomplete {
+  background: #5c3a18;
+  box-shadow: inset 0 0 0 1px #e6c35c;
 }
 
 .episode-legend {
@@ -1825,3 +1835,191 @@ a.brand:hover .brand-name {
     max-height: 420px;
   }
 }
+
+/* Composite + incomplete */
+.incomplete-banner {
+  background: var(--red);
+  color: #1a0a0a;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-align: center;
+  padding: 5px 8px;
+  font-size: 11px;
+  margin: -12px -14px 12px;
+}
+
+.scorecard.incomplete,
+.grader-report.incomplete,
+.composite-card.incomplete,
+.transcript-loaded.incomplete,
+.episode-detail.incomplete,
+.panel-like.incomplete {
+  border-color: var(--red);
+}
+
+.score-note {
+  font-size: 9px;
+  color: var(--text-mute);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+.composite-numeral {
+  margin: 0 0 12px;
+}
+
+.composite-numeral .incomplete-banner {
+  margin: 0 0 8px;
+}
+
+.composite-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+  margin-bottom: 4px;
+}
+
+.composite-big {
+  font-size: 44px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.composite-numeral.md .composite-big,
+.composite-big.md {
+  font-size: 32px;
+}
+
+.composite-subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.composite-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.composite-card {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  padding: 12px 14px;
+}
+
+.composite-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+
+.scoring-popover {
+  position: relative;
+  display: inline-block;
+}
+
+.scoring-popover-btn {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.scoring-popover-btn:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.scoring-popover-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 260px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.scoring-popover-lede,
+.scoring-popover-sub {
+  margin: 0 0 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.scoring-popover-panel dl {
+  margin: 0 0 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.scoring-popover-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.scoring-popover-panel dt {
+  color: var(--text-mute);
+}
+
+.scoring-popover-panel dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sort-th {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sort-th:hover {
+  color: var(--text);
+}
+
+.evals-table .rank-composite {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.evals-table tr.incomplete-row td:first-child {
+  color: var(--red);
+}
+
+.incomplete-inline {
+  color: var(--red);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.ep-outcome.incomplete {
+  color: var(--yellow);
+}
+
+.episode-row.incomplete {
+  border-left: 2px solid var(--yellow);
+}
+
