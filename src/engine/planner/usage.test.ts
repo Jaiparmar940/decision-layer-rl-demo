@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseProviderUsage } from './usage';
 
 describe('parseProviderUsage', () => {
-  it('reads OpenRouter cost, reasoning, and cached tokens', () => {
+  it('reads gateway cost, reasoning, and cached tokens', () => {
     const u = parseProviderUsage({
       prompt_tokens: 100,
       completion_tokens: 50,

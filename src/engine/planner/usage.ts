@@ -16,7 +16,7 @@ function nest(
 }
 
 /**
- * Normalize provider usage (OpenRouter / OpenAI / Gemini OpenAI-compat /
+ * Normalize provider usage (gateway / direct chat / Gemini compat /
  * Gemini usageMetadata) into a single vector. Cost is taken from the
  * provider payload when present — never a local price table.
  */
