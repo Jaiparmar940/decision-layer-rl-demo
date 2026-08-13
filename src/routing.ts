@@ -1,3 +1,5 @@
+import { listDomains } from './config';
+
 export type AppView =
   | 'live'
   | 'results'
@@ -50,8 +52,8 @@ export function resolveDomainId(search?: string): string {
     (typeof window !== 'undefined' ? window.location.search : '');
   const params = new URLSearchParams(raw.startsWith('?') ? raw : `?${raw}`);
   const id = (params.get('domain') ?? 'hospitality').toLowerCase();
-  if (id === 'folding') return 'folding';
-  return 'hospitality';
+  const key = listDomains().find((k) => k.toLowerCase() === id);
+  return key ?? 'hospitality';
 }
 
 /** Update domain query param without dropping view (and other) params. */

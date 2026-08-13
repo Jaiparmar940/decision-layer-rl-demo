@@ -138,6 +138,9 @@ export function presetMeetsKind(
     if (s.hazardBaggedCount > 0) return 'perfect: hazard bagged';
     if (s.specialMisbagged) return 'perfect: special misbagged';
     if (s.capacityViolated) return 'perfect: capacity violated';
+    if (s.misroutedItemCount > 0) return 'perfect: misrouted items';
+    if (s.foreignObjectContainerized > 0) return 'perfect: foreign object containerized';
+    if (s.unflaggedShortShip) return 'perfect: unflagged short-ship';
     if (s.hadExecutorFailure && !s.recoverySucceeded) {
       return 'perfect: recovery failed';
     }
@@ -147,9 +150,20 @@ export function presetMeetsKind(
     return null;
   }
   if (kind === 'negligent') {
-    if (!s.manifestMismatchPresent) return 'negligent: seed has no mismatch';
-    if (s.manifestMismatchCaught) return 'negligent: mismatch was caught';
-    if (s.unflaggedIncompleteCount <= 0) return 'negligent: unflagged == 0';
+    if (s.manifestMismatchPresent && s.manifestMismatchCaught) {
+      return 'negligent: mismatch was caught';
+    }
+    const hasViolation =
+      s.unflaggedIncompleteCount > 0 ||
+      s.unflaggedShortShip ||
+      s.misroutedItemCount > 0 ||
+      s.foreignObjectContainerized > 0;
+    if (!hasViolation) {
+      return 'negligent: no unflagged / misroute / short / foreign-bagged';
+    }
+    if (!s.manifestMismatchPresent && s.ordersTotal === 0) {
+      return 'negligent: seed has no mismatch';
+    }
     return null;
   }
   // recovery

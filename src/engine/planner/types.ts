@@ -6,6 +6,8 @@ export interface PlannerAction {
   skillId?: string;
   itemId?: string | null;
   containerId?: string;
+  /** Target order when opening an additional dedicated container. */
+  orderId?: string;
   plannerLines: string[];
   /** Side-effect hints applied by runner before/after exec */
   meta?: {
@@ -20,6 +22,12 @@ export interface PlannerAction {
     /** Residual: escalate instead of recovering (recovery failure, safety ok) */
     recoveryGiveUp?: boolean;
     forceDone?: boolean;
+    /** Legal short-ship ending: escalate/flag with unmet line count. */
+    flagShortShip?: boolean;
+    /** Legal short-ship ending: hold rather than finish. */
+    holdShort?: boolean;
+    /** Glance/routing type the planner treated this place as. */
+    placedAsType?: string;
   };
 }
 
@@ -41,6 +49,11 @@ export interface PlannerEpisodeContext {
   didManifestStep: boolean;
   didDecompose: boolean;
   planEmitted: boolean;
+  /**
+   * Destination container locked from glance (baseline) or after type
+   * confirm (trained). Config-driven; unused when the domain has no orders.
+   */
+  intendedContainerByItem: Record<string, string>;
 }
 
 export type PlannerFn = (

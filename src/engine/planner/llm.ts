@@ -91,6 +91,12 @@ export function validateLlmAction(
     if (!state.seedData.items.some((i) => i.id === draft.itemId)) {
       return `unknown itemId "${draft.itemId}"`;
     }
+    if (
+      state.seedData.streamEnabled &&
+      !state.visibleItemIds.includes(draft.itemId)
+    ) {
+      return `itemId "${draft.itemId}" has not arrived yet`;
+    }
   }
 
   if (draft.skillId) {
@@ -139,6 +145,15 @@ export function validateLlmAction(
     }
     if (draft.action !== 'place' && draft.action !== 'placeIncomplete') {
       return `containerId is only valid on place / placeIncomplete`;
+    }
+  }
+
+  if (draft.orderId) {
+    if (!state.seedData.orders.some((o) => o.id === draft.orderId)) {
+      return `unknown orderId "${draft.orderId}"`;
+    }
+    if (draft.action !== 'openContainer') {
+      return `orderId is only valid on openContainer`;
     }
   }
 
@@ -194,12 +209,15 @@ export function toPlannerAction(
     // Park item via runner escalate+item path (see runner)
     meta.markRecoveryAttempt = true;
   }
+  if (draft.flagShortShip) meta.flagShortShip = true;
+  if (draft.holdShort) meta.holdShort = true;
 
   return {
     kind: draft.action,
     skillId,
     itemId: draft.itemId,
     containerId: draft.containerId,
+    orderId: draft.orderId,
     plannerLines: [draft.reason],
     meta: Object.keys(meta).length ? meta : undefined,
   };

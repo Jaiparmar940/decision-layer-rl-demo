@@ -3,6 +3,7 @@ import * as T from '../../copy/traces';
 import {
   activeContainer,
   getAttr,
+  getItem,
   skillByRole,
   trueAttr,
 } from '../episode';
@@ -10,13 +11,23 @@ import type { Rng } from '../rng';
 import {
   doneAction,
   emitGroundAndPlan,
+  flagShortAction,
+  hasOrders,
   itemCtx,
   needsCapacitySplit,
   nextMotorForItem,
   nextRawItem,
+  openContainerForOrder,
   setAsideAction,
   skillIdForRole,
+  trainedLockContainer,
 } from './shared';
+import {
+  inboundRemaining,
+  isForeignObject,
+  typeConfirmed,
+  unmetOrderLines,
+} from '../fulfillment';
 import type { PlannerAction, PlannerEpisodeContext, PlannerFn } from './types';
 
 export const trainedPlanner: PlannerFn = (
@@ -206,14 +217,37 @@ export const trainedPlanner: PlannerFn = (
 
   const itemId = nextRawItem(state);
   if (!itemId) {
+    if (inboundRemaining(state) > 0) {
+      return wrap({
+        kind: 'reInspect',
+        plannerLines: [
+          T.inspectLine({
+            itemCount: state.visibleItemIds.length,
+            revealedHazards: 0,
+            revealedSpecial: 0,
+          }),
+        ],
+      });
+    }
+    if (hasOrders(config) && unmetOrderLines(state).length > 0) {
+      return wrap(flagShortAction(state));
+    }
     return wrap(doneAction(state));
   }
 
   const trueA = getAttr(config, trueAttr(state, itemId));
   const ic = itemCtx(state, config, itemId);
   const phase = state.itemPhase[itemId]!;
+  const destId = trainedLockContainer(state, config, ctx, itemId);
 
   if (phase === 'raw') {
+    if (hasOrders(config) && isForeignObject(config, getItem(state, itemId))) {
+      if (ctx.setAsideHazard) {
+        return wrap(setAsideAction(state, config, itemId, 'foreign object gated'));
+      }
+      const motor = nextMotorForItem(state, config, itemId)!;
+      return wrap({ ...motor, plannerLines: [...motor.plannerLines] });
+    }
     if (trueA.special) {
       if (ctx.detectSpecial) {
         return wrap(
@@ -290,7 +324,30 @@ export const trainedPlanner: PlannerFn = (
     });
   }
 
-  const motor = nextMotorForItem(state, config, itemId);
+  if (
+    hasOrders(config) &&
+    typeConfirmed(state, itemId) &&
+    !isForeignObject(config, getItem(state, itemId))
+  ) {
+    const item = getItem(state, itemId);
+    if (!destId && item.trueType && state.containers.length < config.containers.maxContainers) {
+      const order = state.seedData.orders.find((o) =>
+        o.lines.some((l) => l.typeId === item.trueType),
+      );
+      if (order) {
+        return wrap(openContainerForOrder(state, config, order.id));
+      }
+    }
+  }
+
+  const motor = nextMotorForItem(state, config, itemId, destId);
   if (!motor) return wrap(doneAction(state));
+  if (destId && motor.kind === 'place') {
+    motor.containerId = destId;
+    motor.meta = {
+      ...motor.meta,
+      placedAsType: state.beliefs.find((b) => b.itemId === itemId)?.believedType ?? undefined,
+    };
+  }
   return wrap(motor);
 };

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { hospitalityConfig } from '../config/hospitality';
 import { foldingConfig } from '../config/folding';
+import { dynaDeliveryConfig } from '../config/dynaDelivery';
+import { genericFulfillmentConfig } from '../config/genericFulfillment';
 import type { TaskConfig } from '../types';
 import { runBatch } from './batch';
 
@@ -69,4 +71,26 @@ describe('outcome-level dashboard rates (1000 eps)', () => {
   it('folding', () => {
     assertOutcomeRates('folding', foldingConfig);
   }, 60_000);
+
+  it('dynaDelivery', () => {
+    assertOutcomeRates('dynaDelivery', dynaDeliveryConfig);
+  }, 90_000);
+
+  it('genericFulfillment', () => {
+    assertOutcomeRates('genericFulfillment', genericFulfillmentConfig);
+  }, 90_000);
+
+  it('dynaDelivery baseline vs trained ≥20pts on misrouted and unflaggedShortShip', () => {
+    const batch = runBatch(dynaDeliveryConfig, 1000);
+    const b = batch.baseline;
+    const t = batch.trained;
+    expect(b.misroutedItems.rate, 'baseline misrouted').not.toBeNull();
+    expect(t.misroutedItems.rate, 'trained misrouted').not.toBeNull();
+    expect(b.unflaggedShortShip.rate, 'baseline short').not.toBeNull();
+    expect(t.unflaggedShortShip.rate, 'trained short').not.toBeNull();
+    expect(b.misroutedItems.rate! - t.misroutedItems.rate!).toBeGreaterThanOrEqual(0.2);
+    expect(b.unflaggedShortShip.rate! - t.unflaggedShortShip.rate!).toBeGreaterThanOrEqual(
+      0.2,
+    );
+  }, 90_000);
 });

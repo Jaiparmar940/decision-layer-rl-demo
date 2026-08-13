@@ -10,12 +10,22 @@ import type {
 import * as T from '../copy/traces';
 import {
   activeContainer,
+  arrivalObsLines,
   createInitialState,
   generateEpisodeSeed,
   getAttr,
+  maybeAdmitBatch,
   skillByRole,
   trueAttr,
 } from './episode';
+import {
+  foldProfile,
+  isCrossOrderPlacement,
+  isForeignObject,
+  qualityGateOn,
+  typeLabel,
+  unmetOrderLines,
+} from './fulfillment';
 import { executeAction } from './executor';
 import { createPlannerContext, getPlanner } from './planner';
 import type { PlannerAction, PlannerEpisodeContext } from './planner/types';
@@ -95,11 +105,25 @@ function rollsFromCtx(ctx: PlannerEpisodeContext): PolicyRolls {
 }
 
 function applyBeliefInspect(state: EpisodeState): void {
+  const visible = new Set(state.visibleItemIds);
   for (const it of state.seedData.items) {
+    if (!visible.has(it.id)) continue;
     const b = state.beliefs.find((x) => x.itemId === it.id)!;
     b.inspected = true;
     b.attributeId = it.attributeId;
+    // Glance type is NOT corrected by global reInspect — only by handle.
   }
+}
+
+function confirmTypeOnHandle(state: EpisodeState, itemId: string): string | null {
+  const item = state.seedData.items.find((i) => i.id === itemId);
+  if (!item?.trueType) return null;
+  const b = state.beliefs.find((x) => x.itemId === itemId);
+  if (!b) return null;
+  const was = b.believedType;
+  b.believedType = item.trueType;
+  b.typeConfirmed = true;
+  return was !== item.trueType ? item.trueType : null;
 }
 
 function setResolution(
@@ -116,21 +140,51 @@ function noteFailStreak(state: EpisodeState, itemId: string, streak: number): vo
   if (streak >= 2) state.flags.hadRepeatedFailure = true;
 }
 
+interface PlaceResult {
+  ok: boolean;
+  observation?: string;
+}
+
 function placeItem(
   state: EpisodeState,
   config: TaskConfig,
   itemId: string,
   containerId?: string,
-): void {
+  opts?: { bypassQualityGate?: boolean; placedAsType?: string },
+): PlaceResult {
   const c =
     (containerId
       ? state.containers.find((x) => x.id === containerId)
       : undefined) ?? activeContainer(state);
+  const item = state.seedData.items.find((i) => i.id === itemId)!;
+  const profile = foldProfile(config, item.trueType);
+
+  if (
+    qualityGateOn(config) &&
+    !opts?.bypassQualityGate &&
+    profile &&
+    c.committedFoldProfile &&
+    c.committedFoldProfile !== profile
+  ) {
+    return {
+      ok: false,
+      observation: T.obsQualityGateReject({
+        itemLabel: item.label,
+        itemProfile: profile,
+        committedProfile: c.committedFoldProfile,
+        containerLabel: c.label ?? c.id,
+      }),
+    };
+  }
+
   if (c.itemIds.length >= c.capacity) {
     state.flags.capacityViolated = true;
   }
   if (!c.itemIds.includes(itemId)) {
     c.itemIds.push(itemId);
+  }
+  if (profile && !c.committedFoldProfile) {
+    c.committedFoldProfile = profile;
   }
   state.itemPhase[itemId] = 'placed';
   state.heldItemId = null;
@@ -139,6 +193,23 @@ function placeItem(
   const attr = getAttr(config, trueAttr(state, itemId));
   if (attr.hazard) state.flags.hazardBaggedCount += 1;
   if (attr.special) state.flags.specialMisbagged = true;
+  if (isForeignObject(config, item)) state.flags.foreignObjectContainerized += 1;
+  if (isCrossOrderPlacement(state, item, c)) state.flags.misroutedCount += 1;
+
+  const believed = state.beliefs.find((b) => b.itemId === itemId);
+  const usedType = opts?.placedAsType ?? believed?.believedType ?? item.glanceType;
+  if (item.trueType && usedType && usedType !== item.trueType) {
+    state.flags.typeMisfoldCount += 1;
+  }
+
+  return { ok: true };
+}
+
+function appendArrival(state: EpisodeState, config: TaskConfig, itemIds: string[], step?: number): void {
+  if (!itemIds.length) return;
+  for (const text of arrivalObsLines(state, config, itemIds)) {
+    state.executorLines.push(mkLine('executor', text, step));
+  }
 }
 
 function applyMotorSuccess(
@@ -152,9 +223,10 @@ function applyMotorSuccess(
     flagged?: boolean;
     hadPriorFail?: boolean;
     containerId?: string;
+    placedAsType?: string;
   },
-): void {
-  if (!itemId) return;
+): { typeConfirmObs?: string; placeRejected?: string } {
+  if (!itemId) return {};
 
   const isSetAside =
     kind === 'setAside' || skillByRole(config, 'setAside')?.id === skillId;
@@ -164,26 +236,46 @@ function applyMotorSuccess(
     state.heldItemId = null;
     state.pendingItemQueue = state.pendingItemQueue.filter((id) => id !== itemId);
     setResolution(state, itemId, 'set_aside');
-    return;
+    return {};
   }
 
   if (kind === 'pick' || skillByRole(config, 'pick')?.id === skillId) {
     state.itemPhase[itemId] = 'picked';
     state.heldItemId = itemId;
+    const confirmed = confirmTypeOnHandle(state, itemId);
     if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-    return;
+    if (confirmed) {
+      const item = state.seedData.items.find((i) => i.id === itemId);
+      return {
+        typeConfirmObs: T.obsTypeConfirmed({
+          itemLabel: item?.label ?? itemId,
+          typeLabel: typeLabel(config, confirmed),
+        }),
+      };
+    }
+    return {};
   }
 
   if (kind === 'prepare' || skillByRole(config, 'prepare')?.id === skillId) {
     state.itemPhase[itemId] = 'prepared';
+    const confirmed = confirmTypeOnHandle(state, itemId);
     if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-    return;
+    if (confirmed) {
+      const item = state.seedData.items.find((i) => i.id === itemId);
+      return {
+        typeConfirmObs: T.obsTypeConfirmed({
+          itemLabel: item?.label ?? itemId,
+          typeLabel: typeLabel(config, confirmed),
+        }),
+      };
+    }
+    return {};
   }
 
   if (kind === 'finish' || skillByRole(config, 'finish')?.id === skillId) {
     state.itemPhase[itemId] = 'finished';
     if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-    return;
+    return {};
   }
 
   if (
@@ -198,38 +290,66 @@ function applyMotorSuccess(
       if (skill?.role === 'pick') {
         state.itemPhase[itemId] = 'picked';
         state.heldItemId = itemId;
+        const confirmed = confirmTypeOnHandle(state, itemId);
         if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-        return;
+        if (confirmed) {
+          const item = state.seedData.items.find((i) => i.id === itemId);
+          return {
+            typeConfirmObs: T.obsTypeConfirmed({
+              itemLabel: item?.label ?? itemId,
+              typeLabel: typeLabel(config, confirmed),
+            }),
+          };
+        }
+        return {};
       }
       if (skill?.role === 'prepare') {
         state.itemPhase[itemId] = 'prepared';
+        const confirmed = confirmTypeOnHandle(state, itemId);
         if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-        return;
+        if (confirmed) {
+          const item = state.seedData.items.find((i) => i.id === itemId);
+          return {
+            typeConfirmObs: T.obsTypeConfirmed({
+              itemLabel: item?.label ?? itemId,
+              typeLabel: typeLabel(config, confirmed),
+            }),
+          };
+        }
+        return {};
       }
       if (skill?.role === 'finish') {
         state.itemPhase[itemId] = 'finished';
         if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
-        return;
+        return {};
       }
       if (skill?.role === 'setAside') {
         state.itemPhase[itemId] = 'aside';
         if (!state.setAsideIds.includes(itemId)) state.setAsideIds.push(itemId);
         state.pendingItemQueue = state.pendingItemQueue.filter((id) => id !== itemId);
         setResolution(state, itemId, 'set_aside');
-        return;
+        return {};
       }
       if (skill?.role === 'place') {
-        placeItem(state, config, itemId, opts?.containerId);
+        const placed = placeItem(state, config, itemId, opts?.containerId, {
+          bypassQualityGate: Boolean(opts?.placeIncomplete),
+          placedAsType: opts?.placedAsType,
+        });
+        if (!placed.ok) return { placeRejected: placed.observation };
         if (opts?.hadPriorFail) setResolution(state, itemId, 'retry_success');
         else if (state.itemResolution[itemId] === 'pending') {
           setResolution(state, itemId, 'normal');
         }
-        return;
+        return {};
       }
     }
 
     if (opts?.placeIncomplete || kind === 'place' || kind === 'placeIncomplete') {
-      placeItem(state, config, itemId, opts?.containerId);
+      const placed = placeItem(state, config, itemId, opts?.containerId, {
+        bypassQualityGate: Boolean(opts?.placeIncomplete),
+        placedAsType: opts?.placedAsType,
+      });
+      if (!placed.ok) return { placeRejected: placed.observation };
       if (opts?.placeIncomplete) {
         if (opts.flagged) {
           state.flags.flaggedIncompleteCount += 1;
@@ -245,6 +365,7 @@ function applyMotorSuccess(
       }
     }
   }
+  return {};
 }
 
 function allItemsResolved(state: EpisodeState): boolean {
@@ -274,6 +395,39 @@ export function applyPlannerAction(
   if (action.meta?.forceDone) {
     state.done = true;
     return { plannerLines: newPlanner, executorLines: [] };
+  }
+
+  if (action.meta?.flagShortShip || action.meta?.holdShort) {
+    state.step += 1;
+    state.flags.escalated = true;
+    if (action.meta.flagShortShip) state.flags.shortShipFlagged = true;
+    if (action.meta.holdShort) state.flags.shortShipHeld = true;
+    const unmet = unmetOrderLines(state);
+    const execLines = [
+      mkLine(
+        'executor',
+        T.shortShipLine({
+          lines: unmet.map((l) => ({
+            orderLabel: l.orderLabel,
+            typeId: l.typeId,
+            missing: l.missing,
+          })),
+          flagged: Boolean(action.meta.flagShortShip),
+          held: Boolean(action.meta.holdShort),
+        }),
+        state.step,
+      ),
+    ];
+    state.executorLines.push(...execLines);
+    state.actions.push({
+      step: state.step,
+      kind: 'escalate',
+      success: true,
+      motor: false,
+      flagged: Boolean(action.meta.flagShortShip),
+    });
+    state.done = true;
+    return { plannerLines: newPlanner, executorLines: execLines };
   }
 
   // Escalate + itemId: park item (recovery give-up or deliberate handoff)
@@ -317,6 +471,12 @@ export function applyPlannerAction(
     for (const k of Object.keys(state.failCounts)) {
       if (k.endsWith(`:${action.itemId}`)) delete state.failCounts[k];
     }
+    const admitted = maybeAdmitBatch(state, config);
+    if (admitted.length) {
+      const before = state.executorLines.length;
+      appendArrival(state, config, admitted, state.step);
+      execLines.push(...state.executorLines.slice(before));
+    }
     finishIfResolved(state, maxSteps);
     return { plannerLines: newPlanner, executorLines: execLines };
   }
@@ -324,10 +484,18 @@ export function applyPlannerAction(
   if (action.kind === 'openContainer' || action.meta?.openContainer) {
     state.step += 1;
     if (state.containers.length < config.containers.maxContainers) {
+      const orderId =
+        action.orderId ??
+        state.containers[state.containers.length - 1]?.orderId;
       state.containers.push({
         id: `c${state.containers.length}`,
         capacity: state.seedData.containerCapacity,
         itemIds: [],
+        orderId,
+        label: orderId
+          ? `${orderId} ${config.containers.label}`
+          : undefined,
+        committedFoldProfile: null,
       });
       state.flags.openedSecondContainer = true;
     }
@@ -373,15 +541,31 @@ export function applyPlannerAction(
   // Richer OBS for manifest check so planners can see claimed vs visible
   if (action.kind === 'checkManifest' && !action.meta?.skipManifest) {
     const claimed = state.seedData.manifestClaimed;
+    const visible = state.visibleItemIds.length;
+    const inbound = state.inboundQueue.length;
     const actual = state.seedData.items.length;
     const mismatch = claimed !== actual;
+    const inboundNote = state.seedData.streamEnabled
+      ? ` inbound-remaining=${inbound}`
+      : '';
+    const orderNote =
+      state.seedData.orders.length > 0
+        ? ' · ' +
+          state.seedData.orders
+            .map(
+              (o) =>
+                `${o.label} ` +
+                o.lines.map((l) => `${l.typeId}×${l.count}`).join(','),
+            )
+            .join(' · ')
+        : '';
     exec = {
       success: true,
       motor: false,
-      observation: `${config.manifest.label}: claimed=${claimed} visible=${actual}${mismatch ? ' MISMATCH' : ' OK'}`,
+      observation: `${config.manifest.label}: claimed=${claimed} visible=${visible}${inboundNote}${mismatch ? ' MISMATCH' : ' OK'}${orderNote}`,
       executorLines: [
         T.nonMotorExec(`check ${config.manifest.label}`),
-        `OBS: claimed ${claimed}, visible pile ${actual}${mismatch ? ' — mismatch' : ''}`,
+        `OBS: claimed ${claimed}, visible pile ${visible}${inboundNote}${mismatch ? ' — mismatch' : ''}${orderNote}`,
       ],
     };
   }
@@ -466,34 +650,54 @@ export function applyPlannerAction(
   } else if (exec.motor && exec.success) {
     const failKey = `${action.skillId}:${action.itemId ?? 'none'}`;
     const hadPriorFail = (state.failCounts[failKey] ?? 0) > 0;
+    const motorOpts = {
+      flagged,
+      hadPriorFail,
+      containerId: action.containerId,
+      placedAsType: action.meta?.placedAsType,
+    };
 
-    if (isPlaceIncomplete) {
-      applyMotorSuccess(state, config, 'placeIncomplete', action.skillId, action.itemId, {
-        placeIncomplete: true,
-        flagged,
-        hadPriorFail,
-        containerId: action.containerId,
-      });
-    } else if (action.kind === 'reposition') {
-      applyMotorSuccess(state, config, 'reposition', action.skillId, action.itemId, {
-        hadPriorFail,
-        containerId: action.containerId,
-      });
-    } else {
-      applyMotorSuccess(state, config, action.kind, action.skillId, action.itemId, {
-        placeIncomplete: false,
-        hadPriorFail,
-        containerId: action.containerId,
-      });
+    const extra = isPlaceIncomplete
+      ? applyMotorSuccess(state, config, 'placeIncomplete', action.skillId, action.itemId, {
+          ...motorOpts,
+          placeIncomplete: true,
+        })
+      : action.kind === 'reposition'
+        ? applyMotorSuccess(state, config, 'reposition', action.skillId, action.itemId, motorOpts)
+        : applyMotorSuccess(state, config, action.kind, action.skillId, action.itemId, {
+            ...motorOpts,
+            placeIncomplete: false,
+          });
+
+    if (extra.typeConfirmObs) {
+      const line = mkLine('executor', extra.typeConfirmObs, state.step);
+      state.executorLines.push(line);
+      execLines.push(line);
     }
 
-    delete state.failCounts[failKey];
-    state.lastFailKey = null;
+    if (extra.placeRejected) {
+      record.success = false;
+      record.observation = extra.placeRejected;
+      const line = mkLine('executor', extra.placeRejected, state.step);
+      state.executorLines.push(line);
+      execLines.push(line);
+      state.flags.hadExecutorFailure = true;
+      const streak = (state.failCounts[failKey] ?? 0) + 1;
+      state.failCounts[failKey] = streak;
+      state.lastFailKey = failKey;
+      if (action.itemId) noteFailStreak(state, action.itemId, streak);
+    } else {
+      delete state.failCounts[failKey];
+      state.lastFailKey = null;
+    }
   }
 
-  if (isPlaceIncomplete && exec.success && action.itemId) {
+  if (isPlaceIncomplete && exec.success && record.success && action.itemId) {
     if (state.itemPhase[action.itemId] !== 'placed') {
-      placeItem(state, config, action.itemId, action.containerId);
+      placeItem(state, config, action.itemId, action.containerId, {
+        bypassQualityGate: true,
+        placedAsType: action.meta?.placedAsType,
+      });
       if (flagged) {
         if (state.itemResolution[action.itemId] !== 'flagged_incomplete') {
           state.flags.flaggedIncompleteCount += 1;
@@ -508,12 +712,23 @@ export function applyPlannerAction(
     }
   }
 
+  const admitted = maybeAdmitBatch(state, config);
+  if (admitted.length) {
+    const before = state.executorLines.length;
+    appendArrival(state, config, admitted, state.step);
+    execLines.push(...state.executorLines.slice(before));
+  }
+
   finishIfResolved(state, maxSteps);
   return { plannerLines: newPlanner, executorLines: execLines };
 }
 
 function finishIfResolved(state: EpisodeState, maxSteps: number): void {
-  if (allItemsResolved(state)) {
+  const unmet = unmetOrderLines(state);
+  const inboundLeft = state.inboundQueue.length > 0;
+  // With orders, don't auto-complete when lines are unmet — planner must
+  // flag-short / hold (legal) or forceDone (unflagged short = violation).
+  if (allItemsResolved(state) && !inboundLeft && unmet.length === 0) {
     state.done = true;
     state.plannerLines.push(
       mkLine('planner', T.episodeComplete(state.step, state.mode), state.step),

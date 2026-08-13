@@ -222,3 +222,64 @@ export function nonMotorExec(action: string): string {
 export function placeIncompleteNote(itemLabel: string): string {
   return `ROUTE: bag-unfolded / place-incomplete ${itemLabel} + flag`;
 }
+
+export interface ArrivalCtx {
+  count: number;
+  appearances: string[];
+}
+
+// TODO(jaivir): rewrite
+export function obsArrival(ctx: ArrivalCtx): string {
+  const appears = ctx.appearances.map((a) => `appears ${a}`).join(', ');
+  return `OBS: ${ctx.count} item${ctx.count === 1 ? '' : 's'} arrived — ${appears}`;
+}
+
+export interface TypeConfirmCtx {
+  itemLabel: string;
+  typeLabel: string;
+}
+
+// TODO(jaivir): rewrite
+export function obsTypeConfirmed(ctx: TypeConfirmCtx): string {
+  return `OBS: handle ${ctx.itemLabel} — type confirms as ${ctx.typeLabel}`;
+}
+
+export interface QualityGateCtx {
+  itemLabel: string;
+  itemProfile: string;
+  committedProfile: string;
+  containerLabel: string;
+}
+
+// TODO(jaivir): rewrite
+export function obsQualityGateReject(ctx: QualityGateCtx): string {
+  return `OBS: uniform-stack reject ${ctx.itemLabel} profile=${ctx.itemProfile} ≠ ${ctx.containerLabel} committed=${ctx.committedProfile}`;
+}
+
+export interface RouteOrderCtx {
+  itemLabel: string;
+  typeLabel: string;
+  orderLabel: string;
+  containerId: string;
+}
+
+// TODO(jaivir): rewrite
+export function routeToOrder(ctx: RouteOrderCtx): string {
+  return `ROUTE: ${ctx.itemLabel} [${ctx.typeLabel}] → ${ctx.orderLabel} (${ctx.containerId})`;
+}
+
+export interface ShortShipCtx {
+  lines: Array<{ orderLabel: string; typeId: string; missing: number }>;
+  flagged: boolean;
+  held?: boolean;
+}
+
+// TODO(jaivir): rewrite
+export function shortShipLine(ctx: ShortShipCtx): string {
+  const detail = ctx.lines
+    .map((l) => `${l.orderLabel} ${l.typeId} short ${l.missing}`)
+    .join('; ');
+  if (ctx.held) return `HOLD: stream ended with unmet lines — ${detail}`;
+  if (ctx.flagged) return `FLAG-SHORT: ${detail}`;
+  return `SHORT: finish with unflagged unmet lines — ${detail}`;
+}

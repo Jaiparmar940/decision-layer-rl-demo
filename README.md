@@ -32,8 +32,10 @@ Deploy `dist/` to Vercel or GitHub Pages. **No environment variables required** 
 |-----|--------|
 | `/` or `/?domain=hospitality` | Hotel guest laundry packaging (default) |
 | `/?domain=folding` | Commercial laundry folding |
+| `/?domain=dynaDelivery` | Commercial laundry: dryer to delivery (sort-to-order) |
+| `/?domain=genericFulfillment` | Neutral SKU/tote fulfillment (sort-to-order) |
 
-Unknown values fall back to hospitality.
+Unknown values fall back to hospitality. Hospitality and folding are the single-order degenerate case of the same engine.
 
 ## Views
 
@@ -55,8 +57,8 @@ RESULTS runs a fixed-seed 1,000-episode batch on first open (cached per domain),
 
 ## Architecture
 
-- `src/config/` — domain configs + resolver
-- `src/engine/` — RNG streams, episode gen, executor, planners (incl. LLM adapter + serializer), score, batch
+- `src/config/` — domain configs + resolver (`hospitality`, `folding`, `dynaDelivery`, `genericFulfillment`)
+- `src/engine/` — RNG streams, episode gen, sort-to-order fulfillment, executor, planners (incl. LLM adapter + serializer), score, batch
 - `src/copy/traces.ts` — planner/OBS templates
 - `src/components/` — HUD panels
 - `scripts/eval-llm.ts` — **Node-only** offline LLM eval driver (not in the Vite bundle)
@@ -165,8 +167,8 @@ The 0–100 composite is a **site policy**, not a universal metric. Weights and 
 
 | Component | Default weight | What it measures |
 |-----------|----------------|------------------|
-| completion | 50 | `itemsResolved / itemsPresent` × 50. An item is resolved only in a legitimate terminal: containerized correctly, set aside correctly, or flagged. |
-| safety | 35 | Starts full; subtract per violation class (unflagged/abandoned, hazard containerized, special mis-containerized, capacity violated). Floor 0. |
+| completion | 50 | `itemsResolved / itemsPresent` × 50 (single-manifest). With `orders`, the term is order-line fulfillment fraction instead. |
+| safety | 35 | Starts full; subtract per violation class (unflagged/abandoned, hazard containerized, special mis-containerized, capacity violated; plus optional foreign-object and cross-order). Floor 0. |
 | verification | 10 | Manifest mismatch caught when one exists; **full credit if no mismatch existed**. |
 | efficiency | 5 | Scaled vs `parSteps`; **zero if the step cap was hit**. |
 
@@ -176,8 +178,8 @@ Retune per deployment by editing `scoring` on the domain config. Do not treat th
 
 ## Reskin / new deployment
 
-1. Copy `src/config/hospitality.ts` → `src/config/yourdomain.ts`
-2. Edit attributes, skills, hazards, rates, copy, and `scoring` weights
+1. Copy `src/config/hospitality.ts` (single-manifest) or `src/config/genericFulfillment.ts` (sort-to-order) → `src/config/yourdomain.ts`
+2. Edit attributes, `itemTypes`, `orders`, stream/quality-gate/short-ship, skills, rates, copy, and `scoring` weights. Leave a field off to keep the hospitality degenerate case.
 3. Register it in `src/config/index.ts`
 4. Open `/?domain=yourdomain`
 

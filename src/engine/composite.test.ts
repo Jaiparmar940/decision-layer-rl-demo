@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCORING } from '../config/scoring';
 import { hospitalityConfig } from '../config/hospitality';
 import { foldingConfig } from '../config/folding';
+import { dynaDeliveryConfig } from '../config/dynaDelivery';
+import { genericFulfillmentConfig } from '../config/genericFulfillment';
 import { compositeScore } from './composite';
 import { emptyScorecard } from './score';
 import { PRESET_FIXTURES, runActionScript } from './presets';
@@ -11,6 +13,8 @@ import type { Scorecard, ScoringConfig, TaskConfig } from '../types';
 const CONFIG: Record<string, TaskConfig> = {
   hospitality: hospitalityConfig,
   folding: foldingConfig,
+  dynaDelivery: dynaDeliveryConfig,
+  genericFulfillment: genericFulfillmentConfig,
 };
 
 function doNothingActions(n: number): LlmActionJson[] {

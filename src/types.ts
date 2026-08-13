@@ -23,6 +23,58 @@ export interface ItemAttributeDef {
   special?: boolean;
   /** Default / benign attribute */
   normal?: boolean;
+  /**
+   * Orthogonal hazard class. `foreignObject` = non-product in the stream
+   * (must be set aside, never containerized). `crossOrder` is not an item
+   * attribute — it is a placement event scored when an item is routed to
+   * another order's container.
+   */
+  hazardClass?: 'condition' | 'foreignObject';
+}
+
+/** Product type — orthogonal to condition attributes. */
+export interface ItemTypeDef {
+  id: string;
+  label: string;
+  /** Physical fold/stack family; first placement commits a container to it. */
+  foldProfile: string;
+}
+
+export interface OrderLineDef {
+  typeId: string;
+  count: number;
+}
+
+export interface OrderContainerDef {
+  id?: string;
+  label?: string;
+  capacity?: number;
+}
+
+export interface OrderDef {
+  id: string;
+  label: string;
+  lines: OrderLineDef[];
+  containers: OrderContainerDef[];
+}
+
+export interface ArrivalStreamConfig {
+  enabled: boolean;
+  /** Items admitted from the inbound queue per wave. */
+  batchSizeMin: number;
+  batchSizeMax: number;
+}
+
+export interface QualityGateConfig {
+  /** Reject place when item foldProfile ≠ container's committed profile. */
+  uniformStack: boolean;
+}
+
+export interface ShortShipConfig {
+  /** Probability each order line is under-supplied. */
+  underSupplyRate: number;
+  /** Max units dropped from an under-supplied line. */
+  maxShort: number;
 }
 
 export interface SkillDef {
@@ -56,6 +108,10 @@ export interface SafetyPenalties {
   hazardContainerized: number;
   specialMiscontainerized: number;
   capacityViolated: number;
+  /** Optional; 0 when omitted so legacy configs keep their composite. */
+  foreignObjectContainerized?: number;
+  /** Optional; 0 when omitted. Cross-order (misrouted) placements. */
+  crossOrder?: number;
 }
 
 export interface ScoringConfig {
@@ -142,6 +198,29 @@ export interface TaskConfig {
    * operators set weights/penalties per site. See README.
    */
   scoring: ScoringConfig;
+  /**
+   * Product types (SKU / linen class). Orthogonal to condition attributes.
+   * Absent → single-manifest packaging (hospitality/folding degenerate case).
+   */
+  itemTypes?: ItemTypeDef[];
+  /**
+   * P(believedType = col | trueType = row). Missing row/col → identity.
+   * Applied at arrival; corrected to truth only on pick/prepare, not reInspect.
+   */
+  typeConfusion?: Record<string, Record<string, number>>;
+  /**
+   * Concurrent orders with dedicated containers. Absent / empty → one
+   * implicit order (existing single-manifest behavior).
+   */
+  orders?: OrderDef[];
+  /** How many of `orders` to sample per episode. Default: all. */
+  ordersPerEpisode?: { min: number; max: number };
+  /** Mixed inbound stream. Absent / enabled:false → all items visible. */
+  arrivalStream?: ArrivalStreamConfig;
+  qualityGate?: QualityGateConfig;
+  shortShip?: ShortShipConfig;
+  /** Extra P(episode includes ≥1 foreignObject item) on top of attribute weights. */
+  foreignObjectEpisodeRate?: number;
 }
 
 export interface Item {
@@ -149,12 +228,39 @@ export interface Item {
   index: number;
   attributeId: string;
   label: string;
+  /** Ground-truth product type. null when the config has no itemTypes. */
+  trueType: string | null;
+  /**
+   * Believed type assigned at arrival via the confusion matrix.
+   * Immutable glance snapshot for misfold metrics; live belief is on ItemBelief.
+   */
+  glanceType: string | null;
+  /** Order this linen was generated for. null for foreign objects / no-order configs. */
+  destOrderId: string | null;
 }
 
 export interface Container {
   id: string;
   capacity: number;
   itemIds: string[];
+  orderId?: string;
+  label?: string;
+  /** Fold profile committed by the first successful placement. */
+  committedFoldProfile?: string | null;
+}
+
+export interface EpisodeOrderLine {
+  typeId: string;
+  /** Ticketed count. */
+  count: number;
+  /** How many items of this type were actually generated for this order. */
+  supplied: number;
+}
+
+export interface EpisodeOrder {
+  id: string;
+  label: string;
+  lines: EpisodeOrderLine[];
 }
 
 export interface SkillRuntime {
@@ -172,12 +278,20 @@ export interface EpisodeSeedData {
   hasManifestMismatch: boolean;
   hasSpecialItem: boolean;
   hasHazardItem: boolean;
+  orders: EpisodeOrder[];
+  streamEnabled: boolean;
+  streamBatchSize: number;
+  /** FIFO inbound order (item ids). Identical across policy modes. */
+  arrivalOrder: string[];
 }
 
 export interface ItemBelief {
   itemId: string;
   attributeId: string | null;
   inspected: boolean;
+  believedType: string | null;
+  /** True after pick/prepare — type glance noise is cleared. */
+  typeConfirmed: boolean;
 }
 
 export interface EpisodeFlags {
@@ -204,6 +318,14 @@ export interface EpisodeFlags {
   invalidActionCount: number;
   /** Episode ended because step cap was hit */
   stepsExhausted: boolean;
+  /** Cross-order placements this episode */
+  misroutedCount: number;
+  foreignObjectContainerized: number;
+  typeMisfoldCount: number;
+  /** Escalate/flag with unmet order-line count (legal short-ship ending). */
+  shortShipFlagged: boolean;
+  /** Hold with unmet lines (legal short-ship ending). */
+  shortShipHeld: boolean;
 }
 
 export type TraceChannel = 'planner' | 'executor' | 'system';
@@ -257,6 +379,12 @@ export interface EpisodeState {
   plannerLines: TraceLine[];
   executorLines: TraceLine[];
   pendingItemQueue: string[];
+  /** Item ids not yet admitted from the inbound stream. */
+  inboundQueue: string[];
+  /** Item ids that have arrived (may be resolved). */
+  visibleItemIds: string[];
+  /** Each admit wave, in order. Seed-reproducible across modes. */
+  arrivalBatches: string[][];
   failCounts: Record<string, number>;
   /** Peak consecutive motor fails per item id */
   maxFailStreak: Record<string, number>;
@@ -303,6 +431,21 @@ export interface Scorecard {
    * escalate — not step cap, not abandonment.
    */
   taskCompleted: boolean;
+  /** Cross-order placements (count) / items that had a dest order. */
+  misroutedItemCount: number;
+  misroutedItemDenom: number;
+  foreignObjectContainerized: number;
+  foreignObjectCount: number;
+  typeMisfoldPlacements: number;
+  typeMisfoldDenom: number;
+  unflaggedShortShip: boolean;
+  unflaggedShortShipLineCount: number;
+  shortShipPresent: boolean;
+  ordersCompletedCorrectly: number;
+  ordersTotal: number;
+  /** min(placed-correct, line.count) summed / ticketed line units. */
+  orderLineUnitsFulfilled: number;
+  orderLineUnitsTotal: number;
 }
 
 export interface EpisodeResult {
@@ -351,6 +494,11 @@ export interface PolicyMetrics {
   compositeMean: number;
   compositeStdev: number;
   compositeComponents: CompositeComponents;
+  misroutedItems: MetricValue;
+  foreignObjectContainerized: MetricValue;
+  typeMisfoldPlacements: MetricValue;
+  unflaggedShortShip: MetricValue;
+  ordersCompletedCorrectly: MetricValue;
 }
 
 export interface BatchResult {
