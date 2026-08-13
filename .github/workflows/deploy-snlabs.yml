@@ -1,0 +1,62 @@
+name: Deploy to snlabs.dev
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-snlabs-decision-layer
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout demo source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build (GitHub Pages base)
+        run: |
+          npx tsc --noEmit
+          npx vite build --base /decision-layer/
+          bash scripts/ci-guard-bundle.sh
+
+      - name: Checkout site repo
+        uses: actions/checkout@v4
+        with:
+          repository: Jaiparmar940/second-nature-site
+          ssh-key: ${{ secrets.SITE_DEPLOY_KEY }}
+          path: site
+
+      - name: Publish decision-layer/
+        run: |
+          rm -rf site/decision-layer
+          mkdir -p site/decision-layer
+          cp -R dist/. site/decision-layer/
+          touch site/decision-layer/.nojekyll
+
+      - name: Commit and push
+        working-directory: site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add decision-layer
+          if git diff --staged --quiet; then
+            echo "No site changes to publish"
+            exit 0
+          fi
+          git commit -m "Deploy decision-layer from decision-layer-rl-demo@${GITHUB_SHA}"
+          git push origin HEAD:main

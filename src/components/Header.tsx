@@ -38,10 +38,14 @@ export function Header({
 
   return (
     <header className="header">
-      <div className="brand" aria-label="Second Nature Labs">
+      <a
+        className="brand"
+        href="https://snlabs.dev/"
+        aria-label="Second Nature Labs"
+      >
         <img className="brand-logo" src={logo} alt="" width={32} height={32} />
         <span className="brand-name">Second Nature Labs</span>
-      </div>
+      </a>
 
       <div className="seg view-seg" role="tablist" aria-label="App view">
         <button
