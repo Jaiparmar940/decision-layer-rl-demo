@@ -138,6 +138,12 @@ button.primary {
   gap: 10px;
   flex-shrink: 0;
   margin-right: 18px;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.brand:hover .brand-name {
+  opacity: 0.85;
 }
 
 .brand-logo {
