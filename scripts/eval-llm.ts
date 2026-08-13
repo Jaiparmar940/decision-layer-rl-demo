@@ -432,7 +432,7 @@ async function main() {
   console.log(`invalid_actions=${invalidActionCount}`);
   console.log(`mean_steps=${meanSteps.toFixed(1)}`);
   console.log(
-    `To show on dashboard, merge into public/results/measured.${args.domain}.json`,
+    `To show on dashboard, merge real eval output into public/results/measured.${args.domain}.json (not sample/ mocks)`,
   );
 }
 

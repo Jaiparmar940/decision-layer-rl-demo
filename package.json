@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && bash scripts/ci-guard-bundle.sh",
+    "build": "tsc --noEmit && vite build && bash scripts/ci-guard-bundle.sh && bash scripts/ci-guard-bundle.sh --self-test",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval:llm": "tsx scripts/eval-llm.ts",
-    "ci:guard": "bash scripts/ci-guard-bundle.sh"
+    "ci:guard": "bash scripts/ci-guard-bundle.sh",
+    "ci:guard:self-test": "bash scripts/ci-guard-bundle.sh --self-test"
   },
   "dependencies": {
     "react": "^19.1.0",

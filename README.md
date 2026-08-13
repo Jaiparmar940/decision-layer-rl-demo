@@ -59,7 +59,7 @@ RESULTS runs a fixed-seed 1,000-episode batch on first open (cached per domain),
 - `src/components/` — HUD panels
 - `scripts/eval-llm.ts` — **Node-only** offline LLM eval driver (not in the Vite bundle)
 - `scripts/prompts/planner-system.md` — auditable system prompt for LLM planners
-- `public/results/measured.<domain>.json` — optional committed measured bars
+- `public/results/measured.<domain>.json` — optional **real** eval artifacts only (no sample data; absent → no measured bars)
 
 ### RNG streams
 
@@ -113,16 +113,14 @@ npm run eval:llm -- --model anthropic/claude-sonnet-4 --domain folding --episode
 
 Each run writes `results/<model-slug>.<domain>.json` (PolicyMetrics + invalid actions, mean steps, mean tokens/ep, cost, wall time, prompt hash).
 
-**Publish to the dashboard** by merging run objects into:
+**Publish to the dashboard** by merging **real** run objects (from `eval:llm`, not mocks) into:
 
 ```text
 public/results/measured.hospitality.json
 public/results/measured.folding.json
 ```
 
-(JSON arrays of `MeasuredRunResult`. Absent file → UI unchanged.)
-
-Sample committed files use `open-small-demo` placeholder numbers so the third column is visible without a key.
+JSON arrays of `MeasuredRunResult`. Entries with `modelId` starting with `sample/` or a non-eval `promptTemplateHash` are rejected at load time. Absent file → UI unchanged (no fabricated placeholders ship in the app).
 
 ### Expected cost (indicative)
 
@@ -130,7 +128,7 @@ From a 5-episode dry run, multiply by 6 for a 30-episode domain, ×2 for both do
 
 ### Bundle safety
 
-`npm run build` runs `scripts/ci-guard-bundle.sh`, which fails if `OPENROUTER` / API key / env references appear under `src/` or in `dist/`.
+`npm run build` runs `scripts/ci-guard-bundle.sh` (POSIX `grep`) over `src/` and `dist/assets/` for `OPENROUTER|openrouter.ai|OPENROUTER_API_KEY|sk-or-`, then `--self-test` to prove the guard can catch a planted token. A missing scanner fails the build.
 
 ## Reskin / new deployment
 
