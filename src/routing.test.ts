@@ -26,4 +26,11 @@ describe('deep-link view + domain', () => {
     expect(resolveView('?domain=folding')).toBe('live');
     expect(resolveDomain('?domain=folding').meta.id).toBe('folding');
   });
+
+  it('resolves sidebar views', () => {
+    expect(resolveView('?view=episodes')).toBe('episodes');
+    expect(resolveView('?view=evals')).toBe('evals');
+    expect(resolveView('?view=curves')).toBe('curves');
+    expect(resolveView('?view=models')).toBe('models');
+  });
 });

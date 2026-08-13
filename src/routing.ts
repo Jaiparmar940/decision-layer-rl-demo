@@ -1,4 +1,19 @@
-export type AppView = 'live' | 'results';
+export type AppView =
+  | 'live'
+  | 'results'
+  | 'episodes'
+  | 'evals'
+  | 'curves'
+  | 'models';
+
+const VIEWS: readonly AppView[] = [
+  'live',
+  'results',
+  'episodes',
+  'evals',
+  'curves',
+  'models',
+] as const;
 
 /**
  * Resolve view tab from query string. Unknown values → live.
@@ -10,7 +25,7 @@ export function resolveView(search?: string): AppView {
     (typeof window !== 'undefined' ? window.location.search : '');
   const params = new URLSearchParams(raw.startsWith('?') ? raw : `?${raw}`);
   const v = (params.get('view') ?? 'live').toLowerCase();
-  if (v === 'results') return 'results';
+  if ((VIEWS as readonly string[]).includes(v)) return v as AppView;
   return 'live';
 }
 

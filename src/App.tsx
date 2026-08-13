@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { resolveDomain } from './config';
 import { resolveView, setViewInUrl, type AppView } from './routing';
+import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
@@ -9,6 +10,10 @@ import { ExecutorPanel } from './components/ExecutorPanel';
 import { ScorecardView } from './components/Scorecard';
 import { BatchDashboard } from './components/BatchDashboard';
 import { ResultsView } from './components/ResultsView';
+import { EpisodesView } from './components/EpisodesView';
+import { EvalsView } from './components/EvalsView';
+import { CurvesView } from './components/CurvesView';
+import { ModelsView } from './components/ModelsView';
 import { useEpisodeRunner } from './hooks/useEpisodeRunner';
 import { useResultsBatch } from './hooks/useResultsBatch';
 import { loadMeasuredResults } from './measured/loadMeasured';
@@ -37,11 +42,10 @@ export default function App() {
   }, [config.meta.id]);
 
   return (
-    <div className={`app view-${view}`}>
+    <div className={`app-shell view-${view}`}>
       <Header
         config={config}
         view={view}
-        onView={setView}
         episodeId={runner.episodeId}
         seed={runner.seed}
         mode={runner.mode}
@@ -54,37 +58,50 @@ export default function App() {
         onBatch={runner.runHundred}
       />
 
-      {view === 'results' ? (
-        <ResultsView config={config} load={resultsLoad} />
-      ) : (
-        <>
-          <main className="main">
-            <EnvironmentPanel
-              config={config}
-              state={runner.state}
-              revealActual={runner.done}
-            />
-            <PlannerPanel config={config} lines={runner.plannerLines} />
-            <ExecutorPanel config={config} lines={runner.executorLines} />
-          </main>
-
-          {(runner.score || runner.batch) && (
-            <div className="lower">
-              {runner.batch ? (
-                <BatchDashboard result={runner.batch} measured={measured} />
-              ) : runner.score ? (
-                <ScorecardView
+      <div className="app-main">
+        <Sidebar view={view} onView={setView} />
+        <div className="app-body">
+          {view === 'results' ? (
+            <ResultsView config={config} load={resultsLoad} />
+          ) : view === 'episodes' ? (
+            <EpisodesView config={config} />
+          ) : view === 'evals' ? (
+            <EvalsView config={config} measured={measured} />
+          ) : view === 'curves' ? (
+            <CurvesView config={config} />
+          ) : view === 'models' ? (
+            <ModelsView />
+          ) : (
+            <>
+              <main className="main">
+                <EnvironmentPanel
                   config={config}
-                  score={runner.score}
-                  mode={runner.mode}
+                  state={runner.state}
+                  revealActual={runner.done}
                 />
-              ) : null}
-            </div>
-          )}
-        </>
-      )}
+                <PlannerPanel config={config} lines={runner.plannerLines} />
+                <ExecutorPanel config={config} lines={runner.executorLines} />
+              </main>
 
-      <Footer config={config} />
+              {(runner.score || runner.batch) && (
+                <div className="lower">
+                  {runner.batch ? (
+                    <BatchDashboard result={runner.batch} measured={measured} />
+                  ) : runner.score ? (
+                    <ScorecardView
+                      config={config}
+                      score={runner.score}
+                      mode={runner.mode}
+                    />
+                  ) : null}
+                </div>
+              )}
+            </>
+          )}
+
+          <Footer config={config} />
+        </div>
+      </div>
     </div>
   );
 }

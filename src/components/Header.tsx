@@ -6,7 +6,6 @@ import { StatusChip } from './StatusChip';
 interface Props {
   config: TaskConfig;
   view: AppView;
-  onView: (v: AppView) => void;
   episodeId: string;
   seed: number;
   mode: PolicyMode;
@@ -19,10 +18,17 @@ interface Props {
   onBatch: () => void;
 }
 
+const VIEW_CHIP: Partial<Record<AppView, string>> = {
+  results: '1,000 EPS // FIXED SEEDS',
+  episodes: 'EPISODE LIBRARY',
+  evals: 'MODEL COMPARISON',
+  curves: 'LEARNING CURVES',
+  models: 'REGISTRY // LOCAL KEYS',
+};
+
 export function Header({
   config,
   view,
-  onView,
   episodeId,
   seed,
   mode,
@@ -47,39 +53,17 @@ export function Header({
         <span className="brand-name">Second Nature Labs</span>
       </a>
 
-      <div className="seg view-seg" role="tablist" aria-label="App view">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={live}
-          className={live ? 'active' : ''}
-          onClick={() => onView('live')}
-        >
-          Live
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={!live}
-          className={!live ? 'active-green' : ''}
-          onClick={() => onView('results')}
-        >
-          Results
-        </button>
-      </div>
-
       <div className="header-meta">
         <div className="header-title">{config.meta.title}</div>
-        {live && (
+        {live ? (
           <StatusChip title="Episode id and RNG seed">
             <strong>
               {episodeId} // SEED {seed}
             </strong>
           </StatusChip>
-        )}
-        {!live && (
-          <StatusChip title="Results batch">
-            <strong>1,000 EPS // FIXED SEEDS</strong>
+        ) : (
+          <StatusChip title="Current view">
+            <strong>{VIEW_CHIP[view] ?? view.toUpperCase()}</strong>
           </StatusChip>
         )}
       </div>
