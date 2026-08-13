@@ -8,7 +8,7 @@ import { Footer } from './components/Footer';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
 import { PlannerPanel } from './components/PlannerPanel';
 import { ExecutorPanel } from './components/ExecutorPanel';
-import { ScorecardView } from './components/Scorecard';
+import { LiveScorecardBar } from './components/Scorecard';
 import { BatchDashboard } from './components/BatchDashboard';
 import { ResultsView } from './components/ResultsView';
 import { EpisodesView } from './components/EpisodesView';
@@ -102,7 +102,7 @@ export default function App() {
                     scoring={config.scoring}
                   />
                 ) : (
-                  <ScorecardView
+                  <LiveScorecardBar
                     config={config}
                     score={runner.score}
                     mode={runner.mode}

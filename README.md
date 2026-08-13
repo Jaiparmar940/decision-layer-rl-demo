@@ -1,5 +1,7 @@
 # Decision-Layer RL Environment Demo
 
+> **`demo/live-video` — keep unmerged.** Live env is a frozen 10-garment hospitality pile (seed 4242). Baseline always runs the untrained script; trained always runs the same pile after training. Batch/eval paths are unchanged.
+
 Single-page interactive demo: a **task-level RL environment** for the decision layer (planner) of a deployed service robot. Everything runs client-side — no backend, no physics, no robot time.
 
 **DECISION-LAYER ENVIRONMENT** with dual scripted policies (BASELINE vs TRAINED), a stochastic executor, live streaming HUD, episode scorecard, and 100-episode batch comparison. Optional **measured** bars show offline LLM planner eval results (committed JSON only — the web app stays static and keyless).
@@ -77,11 +79,29 @@ The web demo never calls a model API. Measure real LLMs as System 01 planners wi
 ### Prerequisites
 
 ```bash
-cp .env.example .env   # set OPENROUTER_API_KEY (gitignored)
+cp .env.example .env   # set provider API keys (gitignored)
 npm install
 ```
 
-`eval:llm` loads `.env` automatically. An already-exported `OPENROUTER_API_KEY` still wins. The web app never reads `.env`.
+`eval:llm` loads `.env` automatically. An already-exported key still wins. The web app never reads `.env`.
+
+Default provider is OpenRouter (`OPENROUTER_API_KEY`). Direct OpenAI:
+
+```bash
+npm run eval:llm -- --provider openai --model gpt-5.6-sol --domain hospitality --episodes 5 --concurrency 2
+```
+
+Uses `OPENAI_API_KEY` and `https://api.openai.com/v1/chat/completions`. Native ids (`gpt-5.6-sol` is the current flagship; `gpt-5.6` aliases to it); a leading `openai/` prefix is stripped. Optional `--base-url` overrides the API root. Cost is the provider’s `usage.cost` when present (no local price table); the run log always prints prompt / completion / reasoning / cached / total tokens.
+
+Direct Gemini (Google AI Studio, `GOOGLE_API_KEY`):
+
+```bash
+npm run eval:llm -- --provider google --model gemini-3.5-flash --domain hospitality --episodes 5 --concurrency 2
+```
+
+`--model google/gemini-3.5-flash` is accepted; the `google/` prefix is stripped. Hits Gemini’s OpenAI-compatible Chat Completions endpoint. Same cost/token accounting as above. (`gemini-2.5-flash` is closed to new API users.)
+
+The adapter extracts JSON from the reply (direct parse → markdown fences → last `{...}` block) and accepts `action`/`kind` plus snake_case, kebab-case, and camelCase kinds. Invalid steps are histogrammed; if more than 25% of the first 10 steps are invalid the run aborts (adapter/format mismatch, not a model result).
 
 System prompt (auditable): [`scripts/prompts/planner-system.md`](scripts/prompts/planner-system.md).
 
@@ -113,7 +133,14 @@ npm run eval:llm -- --model anthropic/claude-sonnet-4 --domain hospitality --epi
 npm run eval:llm -- --model anthropic/claude-sonnet-4 --domain folding --episodes 30 --concurrency 4
 ```
 
-Each run writes `results/<model-slug>.<domain>.json` (PolicyMetrics + invalid actions, mean steps, mean tokens/ep, cost, wall time, prompt hash).
+Each run writes `results/<model-slug>.<domain>.json` (PolicyMetrics, invalid-action histogram, token breakdown, cost from the provider’s `usage.cost` when present, wall time, prompt hash) and a step-by-step transcript per episode:
+
+```text
+results/<model-slug>.<domain>/ep-01.transcript.json
+results/<model-slug>.<domain>/ep-01.transcript.md
+```
+
+Same schema as Manual run (planner payload, action JSON, executor outcome). `results/` is gitignored. Load a `.transcript.json` in EPISODE REVIEW.
 
 **Publish to the dashboard** by merging **real** run objects (from `eval:llm`, not mocks) into:
 
@@ -130,7 +157,7 @@ From a 5-episode dry run, multiply by 6 for a 30-episode domain, ×2 for both do
 
 ### Bundle safety
 
-`npm run build` runs `scripts/ci-guard-bundle.sh` (POSIX `grep`) over `src/` and `dist/assets/` for `OPENROUTER|openrouter.ai|OPENROUTER_API_KEY|sk-or-`, then `--self-test` to prove the guard can catch a planted token. A missing scanner fails the build.
+`npm run build` runs `scripts/ci-guard-bundle.sh` (POSIX `grep`) over `src/` and `dist/assets/` for provider URLs/keys (`OPENROUTER`, `OPENAI_API_KEY`, `api.openai.com`, `sk-or-`, …), then `--self-test` to prove the guard can catch a planted token. A missing scanner fails the build. The Node eval driver in `scripts/` is allowed to talk to providers; the web bundle is not.
 
 ## Composite score (deployment-tunable)
 

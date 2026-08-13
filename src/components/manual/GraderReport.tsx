@@ -1,27 +1,23 @@
 import type { GraderEvidence } from '../../engine/manual/evidence';
-import type { ScoringConfig } from '../../types';
-import { CompositeNumeral } from '../CompositeNumeral';
-import { ScoringPopover } from '../ScoringPopover';
+import type { TaskConfig } from '../../types';
+import { ScorecardView } from '../Scorecard';
 import { yn } from '../../engine/scoreDisplay';
 
 interface Props {
   evidence: GraderEvidence;
-  scoring: ScoringConfig;
+  config: TaskConfig;
 }
 
-export function GraderReport({ evidence, scoring }: Props) {
+export function GraderReport({ evidence, config }: Props) {
   const s = evidence.score;
   const m = evidence.manifestMismatchCaught;
   const incomplete = !s.taskCompleted;
 
   return (
-    <div className={`grader-report${incomplete ? ' incomplete' : ''}`}>
-      {incomplete ? <div className="incomplete-banner">INCOMPLETE</div> : null}
-      <h2>
-        GRADER REPORT // EVIDENCE
-        <ScoringPopover scoring={scoring} />
-      </h2>
-      <CompositeNumeral value={evidence.composite} />
+    <div className="grader-stack">
+      <ScorecardView config={config} score={s} mode="manual" />
+      <div className={`grader-report${incomplete ? ' incomplete' : ''}`}>
+      <h2>GRADER REPORT // EVIDENCE</h2>
       <div className="grader-grid">
         <section>
           <h3>
@@ -137,6 +133,7 @@ export function GraderReport({ evidence, scoring }: Props) {
           <p>stepsExhausted: {yn(evidence.stepsExhausted)}</p>
           <p>invalid planner actions: {s.invalidActionCount}</p>
         </section>
+      </div>
       </div>
     </div>
   );

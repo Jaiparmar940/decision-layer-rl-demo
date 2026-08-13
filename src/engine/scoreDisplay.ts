@@ -41,3 +41,13 @@ export function completionLine(score: Scorecard): {
     exhausted: score.stepsExhausted ? 'Y (cap)' : 'N',
   };
 }
+
+export type ScoreEndedBy = 'finish' | 'escalate' | 'step-cap' | 'incomplete';
+
+/** How the episode ended, from the grader vector alone. */
+export function scoreEndedBy(score: Scorecard): ScoreEndedBy {
+  if (score.stepsExhausted) return 'step-cap';
+  if (score.taskCompleted) return score.escalated ? 'escalate' : 'finish';
+  if (score.escalated) return 'escalate';
+  return 'incomplete';
+}

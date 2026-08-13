@@ -1,14 +1,13 @@
 import type { TaskConfig } from '../types';
 import { useMemo, useState } from 'react';
 import { SimLabel } from './SimLabel';
-import { CompositeNumeral } from './CompositeNumeral';
 import { ScoringPopover } from './ScoringPopover';
 import {
   parseTranscriptJson,
   type EpisodeTranscript,
 } from '../engine/transcript';
-import { compositeScore } from '../engine/composite';
 import { scoringOf } from '../config/scoring';
+import { ScorecardView } from './Scorecard';
 
 interface Props {
   config: TaskConfig;
@@ -71,9 +70,6 @@ export function EpisodesView({ config }: Props) {
   const [loaded, setLoaded] = useState<EpisodeTranscript | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const loadedComposite =
-    loaded?.scorecard != null ? compositeScore(loaded.scorecard, scoring) : null;
-
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setLoadError(null);
@@ -119,9 +115,6 @@ export function EpisodesView({ config }: Props) {
         <div
           className={`panel-like transcript-loaded${loaded.scorecard && !loaded.scorecard.taskCompleted ? ' incomplete' : ''}`}
         >
-          {loaded.scorecard && !loaded.scorecard.taskCompleted ? (
-            <div className="incomplete-banner">INCOMPLETE</div>
-          ) : null}
           <div className="detail-kicker">LOADED TRANSCRIPT</div>
           <h2 className="detail-title">
             {loaded.episodeId} · {loaded.domain} · seed {loaded.masterSeed}
@@ -131,13 +124,6 @@ export function EpisodesView({ config }: Props) {
             {loaded.presetId ? ` / ${loaded.presetId}` : ''} · ended {loaded.endedBy} ·{' '}
             {loaded.steps.length} recorded steps
           </p>
-          {loadedComposite ? (
-            <CompositeNumeral
-              value={loadedComposite}
-              incomplete={loaded.scorecard ? !loaded.scorecard.taskCompleted : false}
-              size="md"
-            />
-          ) : null}
           <ol className="action-history">
             {loaded.steps.map((s) => (
               <li key={s.index}>
@@ -151,9 +137,11 @@ export function EpisodesView({ config }: Props) {
             ))}
           </ol>
           {loaded.scorecard && (
-            <pre className="payload-pre">
-              {JSON.stringify(loaded.scorecard, null, 2)}
-            </pre>
+            <ScorecardView
+              config={config}
+              score={loaded.scorecard}
+              mode={loaded.source}
+            />
           )}
         </div>
       )}

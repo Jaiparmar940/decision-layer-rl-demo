@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-PATTERN='OPENROUTER|openrouter\.ai|OPENROUTER_API_KEY|sk-or-|sk-ant-|sk-proj-|sk-live-|AIzaSy'
+PATTERN='OPENROUTER|openrouter\.ai|OPENROUTER_API_KEY|OPENAI_API_KEY|GOOGLE_API_KEY|api\.openai\.com|generativelanguage\.googleapis\.com|sk-or-|sk-ant-|sk-proj-|sk-live-|AIzaSy'
 
 if ! command -v grep >/dev/null 2>&1; then
   echo "[ci-guard] FATAL: grep not found on PATH — cannot scan; refusing to pass" >&2

@@ -375,8 +375,29 @@ export interface MeasuredRunResult {
   promptTemplateHash: string;
   metrics: PolicyMetrics;
   invalidActionCount: number;
+  /** Per-reason counts for invalid planner steps. */
+  invalidActionHistogram?: {
+    unparseable: number;
+    unknown_kind: number;
+    illegal_params: number;
+    missing_target: number;
+  };
+  /** Truncated samples of invalid steps (adapter debugging). */
+  invalidActionSamples?: Array<{
+    raw: string;
+    reason: string;
+    detail: string;
+    extractionPath: string;
+  }>;
   meanSteps: number;
   meanTokensPerEpisode: number;
+  tokenUsage?: {
+    promptTokens: number;
+    completionTokens: number;
+    reasoningTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
+  };
   totalCostEstimate: number;
   wallMs: number;
 }

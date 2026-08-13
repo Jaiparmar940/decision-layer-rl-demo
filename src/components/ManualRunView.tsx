@@ -350,7 +350,7 @@ export function ManualRunView({ domainId, onDomain }: Props) {
       </div>
 
       {runner.evidence && (
-        <GraderReport evidence={runner.evidence} scoring={config.scoring} />
+        <GraderReport evidence={runner.evidence} config={config} />
       )}
     </div>
   );

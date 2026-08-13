@@ -1,6 +1,6 @@
 import type { ActionRecord, Scorecard, TaskConfig } from '../types';
 import type { SerializedPlannerView } from './planner/serialize';
-import type { LlmActionJson } from './planner/llm';
+import type { ExtractionPath, InvalidActionRecord, LlmActionJson } from './planner/llm';
 
 export const TRANSCRIPT_SCHEMA_VERSION = 1 as const;
 
@@ -15,6 +15,10 @@ export interface TranscriptStep {
   action: LlmActionJson;
   validationError: string | null;
   applied: boolean;
+  /** Raw model completions for this step (LLM eval only). */
+  rawResponses?: string[];
+  extractionPath?: ExtractionPath;
+  invalidFailure?: InvalidActionRecord;
   outcome: {
     step: number;
     success: boolean;
@@ -76,9 +80,23 @@ export function transcriptToMarkdown(
     lines.push('```json');
     lines.push(JSON.stringify(s.action, null, 2));
     lines.push('```');
+    if (s.extractionPath) {
+      lines.push('');
+      lines.push(`Parse path: ${s.extractionPath}`);
+    }
     if (s.validationError) {
       lines.push('');
       lines.push(`Validation: ${s.validationError}`);
+    }
+    if (s.invalidFailure) {
+      lines.push('');
+      lines.push(
+        `Invalid: ${s.invalidFailure.reason} (tried ${s.invalidFailure.pathsTried.join(', ')})`,
+      );
+      lines.push('');
+      lines.push('```');
+      lines.push(s.invalidFailure.raw);
+      lines.push('```');
     }
     if (s.outcome) {
       lines.push('');

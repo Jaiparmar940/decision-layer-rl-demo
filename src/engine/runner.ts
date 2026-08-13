@@ -18,9 +18,14 @@ import {
 } from './episode';
 import { executeAction } from './executor';
 import { createPlannerContext, getPlanner } from './planner';
-import type { PlannerAction, PlannerEpisodeContext } from './planner/types';
+import type { PlannerAction, PlannerEpisodeContext, PlannerFn } from './planner/types';
 import { deriveStreams, type Rng, type StreamBundle } from './rng';
 import { scoreEpisode } from './score';
+import {
+  transcriptEndedBy,
+  type EpisodeTranscript,
+  type TranscriptStep,
+} from './transcript';
 
 /** Default cap for scripted policies; LLM eval uses LLM_MAX_STEPS. */
 export const SCRIPTED_MAX_STEPS = 200;
@@ -399,6 +404,52 @@ export function applyPlannerAction(
     };
   }
 
+  if (action.meta?.forceFail && action.skillId && action.itemId) {
+    const item = state.seedData.items.find((i) => i.id === action.itemId);
+    const itemLabel = item?.label ?? 'item';
+    const skill = config.skills.find((s) => s.id === action.skillId);
+    const skillLabel = skill?.label ?? action.skillId;
+    const attr = item ? getAttr(config, item.attributeId) : null;
+    const failKey = `${action.skillId}:${action.itemId}`;
+    const attempt = (state.failCounts[failKey] ?? 0) + 1;
+    const observation = T.obsPickFail({
+      skillLabel,
+      itemLabel,
+      attributeChip: attr?.chip ?? '—',
+      attempt,
+    });
+    exec = {
+      success: false,
+      motor: true,
+      observation,
+      executorLines: [T.executorMotor(skillLabel, itemLabel, false), observation],
+    };
+  }
+
+  if (action.meta?.forceSuccess && action.skillId && action.itemId && !action.meta?.forceFail) {
+    const itemLabel =
+      state.seedData.items.find((i) => i.id === action.itemId)?.label ?? 'item';
+    const skillLabel =
+      config.skills.find((s) => s.id === action.skillId)?.label ?? action.skillId;
+    exec = {
+      success: true,
+      motor: true,
+      executorLines: [T.executorMotor(skillLabel, itemLabel, true)],
+    };
+  }
+
+  if (action.meta?.holdPhase && action.skillId && action.itemId) {
+    const itemLabel =
+      state.seedData.items.find((i) => i.id === action.itemId)?.label ?? 'item';
+    const skillLabel =
+      config.skills.find((s) => s.id === action.skillId)?.label ?? action.skillId;
+    exec = {
+      success: true,
+      motor: true,
+      executorLines: [T.executorMotor(`reposition ${skillLabel}`, itemLabel, true)],
+    };
+  }
+
   state.step += 1;
   const execLines = exec.executorLines.map((t) =>
     mkLine('executor', t, state.step),
@@ -462,28 +513,34 @@ export function applyPlannerAction(
     const failKey = `${action.skillId}:${action.itemId ?? 'none'}`;
     const hadPriorFail = (state.failCounts[failKey] ?? 0) > 0;
 
-    if (isPlaceIncomplete) {
+    if (action.meta?.holdPhase) {
+      // Demo reposition: visible success, but the garment is still unpicked
+      // and the fail streak stays so the next retry can fail again.
+    } else if (isPlaceIncomplete) {
       applyMotorSuccess(state, config, 'placeIncomplete', action.skillId, action.itemId, {
         placeIncomplete: true,
         flagged,
         hadPriorFail,
         containerId: action.containerId,
       });
+      delete state.failCounts[failKey];
+      state.lastFailKey = null;
     } else if (action.kind === 'reposition') {
       applyMotorSuccess(state, config, 'reposition', action.skillId, action.itemId, {
         hadPriorFail,
         containerId: action.containerId,
       });
+      delete state.failCounts[failKey];
+      state.lastFailKey = null;
     } else {
       applyMotorSuccess(state, config, action.kind, action.skillId, action.itemId, {
         placeIncomplete: false,
         hadPriorFail,
         containerId: action.containerId,
       });
+      delete state.failCounts[failKey];
+      state.lastFailKey = null;
     }
-
-    delete state.failCounts[failKey];
-    state.lastFailKey = null;
   }
 
   if (isPlaceIncomplete && exec.success && action.itemId) {
@@ -526,12 +583,13 @@ export function stepOnce(
   pctx: PlannerEpisodeContext,
   rng: Rng,
   maxSteps: number = SCRIPTED_MAX_STEPS,
+  plannerOverride?: PlannerFn,
 ): { plannerLines: TraceLine[]; executorLines: TraceLine[] } {
   if (state.done) return { plannerLines: [], executorLines: [] };
   if (state.mode === 'llm') {
     throw new Error('stepOnce does not support llm mode — use runEpisodeWithLlm');
   }
-  const planner = getPlanner(state.mode);
+  const planner = plannerOverride ?? getPlanner(state.mode);
   const action = planner(state, config, pctx, rng);
   return applyPlannerAction(state, config, action, rng, maxSteps);
 }
@@ -604,26 +662,33 @@ export interface LlmRunOptions {
   executorRng: Rng;
   maxSteps?: number;
   onStep?: (snapshot: EpisodeLiveSnapshot) => void;
+  onPlannerStep?: (info: import('./planner/parseAction').PlannerStepInfo) => void;
+  throwIfAborted?: () => void;
 }
 
 export interface LlmEpisodeResult extends EpisodeResultExt {
-  tokenUsage: { promptTokens: number; completionTokens: number; cost: number };
+  tokenUsage: import('./planner/llm').ChatCompletionUsage;
   invalidActions: number;
+  invalidRecords: import('./planner/parseAction').InvalidActionRecord[];
+  transcript: EpisodeTranscript;
 }
 
 /** Run one episode with an external chat-backed planner. */
 export async function runEpisodeWithLlm(
   opts: LlmRunOptions,
 ): Promise<LlmEpisodeResult> {
-  const { llmPlanStep } = await import('./planner/llm');
+  const { llmPlanStep, formatPlannerUserMessage, serializePlannerView } =
+    await import('./planner/llm');
   const maxSteps = opts.maxSteps ?? LLM_MAX_STEPS;
   const gen = generateEpisodeSeed(opts.config, opts.masterSeed, opts.episodeSerial ?? 1);
   const state = createInitialState(gen.seedData, 'llm', opts.config);
   const rng = opts.executorRng;
-  let promptTokens = 0;
-  let completionTokens = 0;
-  let cost = 0;
+  const { addUsage, emptyUsage } = await import('./planner/usage');
+  let tokenUsage = emptyUsage();
   let invalidActions = 0;
+  const invalidRecords: import('./planner/parseAction').InvalidActionRecord[] =
+    [];
+  const transcriptSteps: TranscriptStep[] = [];
 
   const emptyRolls: PolicyRolls = {
     catchMismatch: false,
@@ -638,19 +703,29 @@ export async function runEpisodeWithLlm(
   };
 
   while (!state.done) {
+    opts.throwIfAborted?.();
+    const payloadText = formatPlannerUserMessage(state, opts.config);
+    const payload = serializePlannerView(state, opts.config);
+    const index = state.actions.length;
     const step = await llmPlanStep(
       state,
       opts.config,
       opts.systemPrompt,
       opts.chat,
     );
-    promptTokens += step.usage.promptTokens;
-    completionTokens += step.usage.completionTokens;
-    cost += step.usage.cost ?? 0;
+    tokenUsage = addUsage(tokenUsage, step.usage);
     if (step.invalidAction) {
       invalidActions += 1;
       state.flags.invalidActionCount += 1;
+      if (step.invalidRecord) invalidRecords.push(step.invalidRecord);
     }
+    opts.onPlannerStep?.({
+      extractionPath: step.extractionPath,
+      invalid: step.invalidAction,
+      invalidRecord: step.invalidRecord,
+    });
+    const actionsBefore = state.actions.length;
+    const execBefore = state.executorLines.length;
     const { plannerLines, executorLines } = applyPlannerAction(
       state,
       opts.config,
@@ -658,6 +733,35 @@ export async function runEpisodeWithLlm(
       rng,
       maxSteps,
     );
+    const record = state.actions[state.actions.length - 1] ?? null;
+    const newExec = state.executorLines.slice(execBefore).map((l) => l.text);
+    transcriptSteps.push({
+      index,
+      payloadText,
+      payload,
+      action: step.draft,
+      validationError: step.validationError,
+      applied: state.actions.length > actionsBefore,
+      rawResponses: step.rawResponses,
+      extractionPath: step.extractionPath,
+      invalidFailure: step.invalidRecord ?? undefined,
+      outcome: record
+        ? {
+            step: record.step,
+            success: record.success,
+            motor: record.motor,
+            observation: record.observation,
+            executorLines: newExec,
+            record,
+          }
+        : {
+            step: state.step,
+            success: true,
+            motor: false,
+            executorLines: newExec,
+            record: null,
+          },
+    });
     opts.onStep?.({
       state: cloneState(state),
       newPlannerLines: plannerLines,
@@ -667,10 +771,25 @@ export async function runEpisodeWithLlm(
   }
 
   const result = finalizeEpisode(state, opts.config, emptyRolls);
+  const transcript: EpisodeTranscript = {
+    schemaVersion: 1,
+    source: 'llm',
+    episodeId: state.seedData.episodeId,
+    masterSeed: opts.masterSeed,
+    domain: opts.config.meta.id,
+    domainLabel: opts.config.meta.domainLabel,
+    maxSteps,
+    modelId: opts.modelId,
+    steps: transcriptSteps,
+    scorecard: result.score,
+    endedBy: transcriptEndedBy(result.score, state.done),
+  };
   return {
     ...result,
-    tokenUsage: { promptTokens, completionTokens, cost },
+    tokenUsage,
     invalidActions,
+    invalidRecords,
+    transcript,
   };
 }
 

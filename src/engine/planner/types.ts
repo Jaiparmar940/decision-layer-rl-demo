@@ -20,6 +20,12 @@ export interface PlannerAction {
     /** Residual: escalate instead of recovering (recovery failure, safety ok) */
     recoveryGiveUp?: boolean;
     forceDone?: boolean;
+    /** Demo-video only: force a motor fail regardless of RNG. */
+    forceFail?: boolean;
+    /** Demo-video only: force a motor success regardless of RNG. */
+    forceSuccess?: boolean;
+    /** Demo-video only: succeed without advancing phase / clearing fail streak. */
+    holdPhase?: boolean;
   };
 }
 

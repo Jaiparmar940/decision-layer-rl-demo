@@ -8,15 +8,16 @@ import type {
   TraceLine,
 } from '../types';
 import { runBatch } from '../engine/batch';
-import {
-  createInitialState,
-  generateEpisodeSeed,
-  getAttr,
-} from '../engine/episode';
+import { createInitialState, getAttr } from '../engine/episode';
 import { createPlannerContext } from '../engine/planner';
+import {
+  DEMO_LIVE_SEED,
+  demoLivePlanner,
+  pinDemoEpisode,
+} from '../engine/planner/demoLive';
 import type { PlannerEpisodeContext } from '../engine/planner/types';
-import { deriveStreams, randomMasterSeed, type Rng } from '../engine/rng';
-import { cloneState, stepOnce } from '../engine/runner';
+import { deriveStreams, type Rng } from '../engine/rng';
+import { cloneState, SCRIPTED_MAX_STEPS, stepOnce } from '../engine/runner';
 import { scoreEpisode } from '../engine/score';
 
 export interface RunnerApi {
@@ -117,7 +118,14 @@ export function useEpisodeRunner(config: TaskConfig): RunnerApi {
         return;
       }
 
-      stepOnce(live.state, config, live.pctx, live.rng);
+      stepOnce(
+        live.state,
+        config,
+        live.pctx,
+        live.rng,
+        SCRIPTED_MAX_STEPS,
+        demoLivePlanner,
+      );
 
       if (runId !== runIdRef.current) return;
 
@@ -137,14 +145,13 @@ export function useEpisodeRunner(config: TaskConfig): RunnerApi {
   );
 
   const startLive = useCallback(
-    (nextMode: PolicyMode, masterSeed?: number) => {
+    (nextMode: PolicyMode) => {
       clearTimer();
       const runId = ++runIdRef.current;
       serialRef.current += 1;
       const serial = serialRef.current;
-      const ms = masterSeed ?? randomMasterSeed();
-      const streams = deriveStreams(ms);
-      const gen = generateEpisodeSeed(config, ms, serial);
+      const streams = deriveStreams(DEMO_LIVE_SEED);
+      const gen = pinDemoEpisode(config, serial);
       const st = createInitialState(gen.seedData, nextMode, config);
       const rng =
         nextMode === 'baseline'
@@ -156,7 +163,7 @@ export function useEpisodeRunner(config: TaskConfig): RunnerApi {
         state: st,
         pctx,
         rng,
-        masterSeed: ms,
+        masterSeed: DEMO_LIVE_SEED,
         episodeSerial: serial,
       };
 
@@ -166,7 +173,7 @@ export function useEpisodeRunner(config: TaskConfig): RunnerApi {
       setDone(false);
       setRunning(true);
       setModeState(nextMode);
-      setSeed(ms);
+      setSeed(DEMO_LIVE_SEED);
       setEpisodeId(gen.seedData.episodeId);
       setState(cloneState(st));
       setPlannerLines([]);
@@ -201,7 +208,14 @@ export function useEpisodeRunner(config: TaskConfig): RunnerApi {
 
     let guard = 0;
     while (!live.state.done && guard < 500) {
-      stepOnce(live.state, config, live.pctx, live.rng);
+      stepOnce(
+        live.state,
+        config,
+        live.pctx,
+        live.rng,
+        SCRIPTED_MAX_STEPS,
+        demoLivePlanner,
+      );
       guard += 1;
     }
     if (runId !== runIdRef.current) return;
