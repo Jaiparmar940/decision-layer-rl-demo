@@ -53,6 +53,16 @@ export function Header({
         <img className="brand-logo" src={logo} alt="" width={32} height={32} />
         <span className="brand-name">Second Nature Labs</span>
       </a>
+      <button
+        type="button"
+        className="demo-badge"
+        aria-describedby="demo-badge-tip"
+      >
+        DEMO
+        <span id="demo-badge-tip" role="tooltip" className="demo-badge-tip">
+          Sample data and a mock algorithm. Real training is not taking place.
+        </span>
+      </button>
 
       <div className="header-meta">
         <div className="header-title">{config.meta.title}</div>
