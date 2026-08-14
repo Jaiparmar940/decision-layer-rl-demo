@@ -5,6 +5,17 @@ import {
   formatPlannerUserMessage,
   serializePlannerView,
 } from './serialize';
+import {
+  extractLlmAction,
+  recordFromFailure,
+  type ExtractionPath,
+  type InvalidActionRecord,
+  type LlmActionJson,
+} from './parseAction';
+import { addUsage, emptyUsage } from './usage';
+
+export type { LlmActionJson, ExtractionPath, InvalidActionRecord };
+export { extractLlmAction } from './parseAction';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -14,13 +25,19 @@ export interface ChatMessage {
 export interface ChatCompletionUsage {
   promptTokens: number;
   completionTokens: number;
-  /** USD estimate if provider reports it */
+  reasoningTokens?: number;
+  cachedTokens?: number;
+  totalTokens?: number;
+  /** USD from the provider payload when present — never a local price table. */
   cost?: number;
 }
 
 export interface ChatCompletionResult {
   content: string;
   usage: ChatCompletionUsage;
+  /** Ignored for action parse; logged when content is empty. */
+  reasoning?: string;
+  contentSource?: string;
 }
 
 /** Injected by the Node driver — never implemented under Vite src network calls. */
@@ -30,19 +47,14 @@ export type ChatCompleteFn = (
 
 export interface LlmStepResult {
   action: PlannerAction;
+  /** Parsed / applied JSON the env actually used (noop inspect on hard fail). */
+  draft: LlmActionJson;
+  validationError: string | null;
   invalidAction: boolean;
   usage: ChatCompletionUsage;
   rawResponses: string[];
-}
-
-export interface LlmActionJson {
-  action: ActionKind;
-  skillId?: string;
-  itemId?: string | null;
-  /** Optional target container for place / placeIncomplete (defaults to active). */
-  containerId?: string;
-  reason: string;
-  flagIncomplete?: boolean;
+  extractionPath: ExtractionPath;
+  invalidRecord: InvalidActionRecord | null;
 }
 
 export const MOTOR_NEEDS_ITEM: ActionKind[] = [
@@ -56,35 +68,11 @@ export const MOTOR_NEEDS_ITEM: ActionKind[] = [
 ];
 
 export function parseLlmActionJson(raw: string): LlmActionJson {
-  let text = raw.trim();
-  // Strip common markdown fences
-  if (text.startsWith('```')) {
-    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const extracted = extractLlmAction(raw);
+  if (!extracted.draft) {
+    throw new Error(extracted.error ?? 'unparseable JSON');
   }
-  const parsed = JSON.parse(text) as unknown;
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('response is not a JSON object');
-  }
-  const obj = parsed as Record<string, unknown>;
-  if (typeof obj.action !== 'string') {
-    throw new Error('missing string field "action"');
-  }
-  if (typeof obj.reason !== 'string') {
-    throw new Error('missing string field "reason"');
-  }
-  return {
-    action: obj.action as ActionKind,
-    skillId: typeof obj.skillId === 'string' ? obj.skillId : undefined,
-    itemId:
-      obj.itemId === null || obj.itemId === undefined
-        ? (obj.itemId as null | undefined)
-        : String(obj.itemId),
-    containerId:
-      typeof obj.containerId === 'string' ? obj.containerId : undefined,
-    reason: obj.reason,
-    flagIncomplete:
-      typeof obj.flagIncomplete === 'boolean' ? obj.flagIncomplete : undefined,
-  };
+  return extracted.draft;
 }
 
 export function validateLlmAction(
@@ -224,21 +212,6 @@ function noopInspectAction(reason: string): PlannerAction {
   };
 }
 
-function emptyUsage(): ChatCompletionUsage {
-  return { promptTokens: 0, completionTokens: 0, cost: 0 };
-}
-
-function addUsage(
-  a: ChatCompletionUsage,
-  b: ChatCompletionUsage,
-): ChatCompletionUsage {
-  return {
-    promptTokens: a.promptTokens + b.promptTokens,
-    completionTokens: a.completionTokens + b.completionTokens,
-    cost: (a.cost ?? 0) + (b.cost ?? 0),
-  };
-}
-
 /**
  * One planner step via chat completion. Retries once on invalid JSON/action.
  * On second failure: invalidAction + no-op reInspect.
@@ -264,28 +237,74 @@ export async function llmPlanStep(
   const rawResponses: string[] = [];
   let usage = emptyUsage();
 
-  const attempt = async (
-    messages: ChatMessage[],
-  ): Promise<{ ok: true; action: PlannerAction } | { ok: false; error: string }> => {
+  type Attempt =
+    | {
+        ok: true;
+        action: PlannerAction;
+        draft: LlmActionJson;
+        extractionPath: ExtractionPath;
+      }
+    | {
+        ok: false;
+        error: string;
+        draft: LlmActionJson | null;
+        extractionPath: ExtractionPath;
+        invalidRecord: InvalidActionRecord;
+      };
+
+  const attempt = async (messages: ChatMessage[]): Promise<Attempt> => {
     const result = await chat(messages);
     usage = addUsage(usage, result.usage);
-    rawResponses.push(result.content);
-    try {
-      const draft = parseLlmActionJson(result.content);
-      const err = validateLlmAction(draft, state, config);
-      if (err) return { ok: false, error: err };
-      return { ok: true, action: toPlannerAction(draft, state, config) };
-    } catch (e) {
+    const raw = result.content || '';
+    rawResponses.push(raw);
+    const extracted = extractLlmAction(raw);
+    if (!extracted.draft) {
+      const emptyNote =
+        !raw.trim() && result.reasoning
+          ? ` (content empty, reasoning ${result.reasoning.length} chars ignored)`
+          : '';
+      const error = (extracted.error ?? 'unparseable JSON') + emptyNote;
       return {
         ok: false,
-        error: e instanceof Error ? e.message : 'invalid JSON',
+        error,
+        draft: null,
+        extractionPath: extracted.path,
+        invalidRecord: recordFromFailure(raw || result.reasoning || '', {
+          ...extracted,
+          error,
+        }),
       };
     }
+    const err = validateLlmAction(extracted.draft, state, config);
+    if (err) {
+      return {
+        ok: false,
+        error: err,
+        draft: extracted.draft,
+        extractionPath: extracted.path,
+        invalidRecord: recordFromFailure(raw, extracted, err),
+      };
+    }
+    return {
+      ok: true,
+      action: toPlannerAction(extracted.draft, state, config),
+      draft: extracted.draft,
+      extractionPath: extracted.path,
+    };
   };
 
   const first = await attempt(baseMessages);
   if (first.ok) {
-    return { action: first.action, invalidAction: false, usage, rawResponses };
+    return {
+      action: first.action,
+      draft: first.draft,
+      validationError: null,
+      invalidAction: false,
+      usage,
+      rawResponses,
+      extractionPath: first.extractionPath,
+      invalidRecord: null,
+    };
   }
 
   const retryMessages: ChatMessage[] = [
@@ -299,16 +318,33 @@ export async function llmPlanStep(
   ];
   const second = await attempt(retryMessages);
   if (second.ok) {
-    return { action: second.action, invalidAction: false, usage, rawResponses };
+    return {
+      action: second.action,
+      draft: second.draft,
+      validationError: null,
+      invalidAction: false,
+      usage,
+      rawResponses,
+      extractionPath: second.extractionPath,
+      invalidRecord: null,
+    };
   }
 
+  const noop = noopInspectAction(
+    `invalidAction: ${second.error} (after retry) — no-op inspect`,
+  );
   return {
-    action: noopInspectAction(
-      `invalidAction: ${second.error} (after retry) — no-op inspect`,
-    ),
+    action: noop,
+    draft: {
+      action: 'reInspect',
+      reason: noop.plannerLines[0] ?? 'invalidAction no-op inspect',
+    },
+    validationError: second.error,
     invalidAction: true,
     usage,
     rawResponses,
+    extractionPath: second.extractionPath,
+    invalidRecord: second.invalidRecord,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { TaskConfig } from '../types';
+import { DEFAULT_SCORING } from './scoring';
 
 export const foldingConfig: TaskConfig = {
   meta: {
@@ -76,4 +77,5 @@ export const foldingConfig: TaskConfig = {
     itemLabel: 'GARMENT',
     itemLabelPlural: 'GARMENTS',
   },
+  scoring: DEFAULT_SCORING,
 };

@@ -1,4 +1,8 @@
+import { useMemo, useState } from 'react';
 import type { MeasuredRunResult, PolicyMetrics, TaskConfig } from '../types';
+import { runBatch } from '../engine/batch';
+import { formatMetric } from '../engine/metrics';
+import { ScoringPopover } from './ScoringPopover';
 import { SimLabel } from './SimLabel';
 import { MeasuredLabel } from './MeasuredLabel';
 
@@ -7,54 +11,91 @@ interface Props {
   measured: MeasuredRunResult[] | null;
 }
 
-const COMPARISON_ROWS: {
-  key: keyof PolicyMetrics;
-  label: string;
-  baseline: number;
-  trained: number;
-  lowerBetter?: boolean;
-}[] = [
-  {
-    key: 'manifestMismatchCaught',
-    label: 'Manifest mismatch caught',
-    baseline: 0.3,
-    trained: 0.94,
-  },
-  {
-    key: 'hazardBaggedEpisodes',
-    label: 'Hazard containerized',
-    baseline: 0.3,
-    trained: 0.03,
-    lowerBetter: true,
-  },
-  {
-    key: 'specialMisbagged',
-    label: 'Special mis-containerized',
-    baseline: 0.59,
-    trained: 0.04,
-    lowerBetter: true,
-  },
-  {
-    key: 'capacityViolated',
-    label: 'Capacity violated',
-    baseline: 0.3,
-    trained: 0,
-    lowerBetter: true,
-  },
-  {
-    key: 'recoverySuccess',
-    label: 'Recovery success',
-    baseline: 0.69,
-    trained: 0.9,
-  },
-];
+type RankKey =
+  | 'composite'
+  | 'completion'
+  | 'safety'
+  | 'verification'
+  | 'efficiency'
+  | 'taskCompleted';
 
-function pct(n: number) {
-  return `${Math.round(n * 100)}%`;
+interface RankRow {
+  id: string;
+  name: string;
+  kind: 'baseline' | 'trained' | 'measured';
+  metrics: PolicyMetrics;
+  episodeCount: number;
+}
+
+function compositeCell(m: PolicyMetrics): string {
+  if (typeof m.compositeMean !== 'number') return '—';
+  return `${m.compositeMean.toFixed(1)} ± ${m.compositeStdev.toFixed(1)}`;
+}
+
+function sortValue(row: RankRow, key: RankKey): number {
+  const m = row.metrics;
+  switch (key) {
+    case 'composite':
+      return m.compositeMean ?? -1;
+    case 'completion':
+      return m.compositeComponents?.completion ?? -1;
+    case 'safety':
+      return m.compositeComponents?.safety ?? -1;
+    case 'verification':
+      return m.compositeComponents?.verification ?? -1;
+    case 'efficiency':
+      return m.compositeComponents?.efficiency ?? -1;
+    case 'taskCompleted':
+      return m.taskCompleted?.rate ?? -1;
+  }
 }
 
 export function EvalsView({ config, measured }: Props) {
   const runs = measured ?? [];
+  const [sortKey, setSortKey] = useState<RankKey>('composite');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  const scripted = useMemo(() => runBatch(config, 80), [config]);
+
+  const rows: RankRow[] = useMemo(() => {
+    const list: RankRow[] = [
+      {
+        id: 'baseline',
+        name: 'BASELINE',
+        kind: 'baseline',
+        metrics: scripted.baseline,
+        episodeCount: scripted.baseline.episodes,
+      },
+      {
+        id: 'trained',
+        name: 'TRAINED',
+        kind: 'trained',
+        metrics: scripted.trained,
+        episodeCount: scripted.trained.episodes,
+      },
+      ...runs.map((r) => ({
+        id: r.modelId,
+        name: r.modelShortName,
+        kind: 'measured' as const,
+        metrics: r.metrics,
+        episodeCount: r.episodeCount,
+      })),
+    ];
+    const dir = sortDir === 'desc' ? -1 : 1;
+    return list.sort((a, b) => dir * (sortValue(a, sortKey) - sortValue(b, sortKey)));
+  }, [scripted, runs, sortKey, sortDir]);
+
+  const onSort = (key: RankKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const mark = (key: RankKey) =>
+    sortKey === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
 
   return (
     <div className="page-view evals-view">
@@ -62,10 +103,12 @@ export function EvalsView({ config, measured }: Props) {
         <div>
           <h1 className="page-h1">MODEL EVALS // COMPARISON</h1>
           <p className="page-sub">
-            Side-by-side planner metrics for {config.meta.domainLabel}.
+            Ranked by composite (mean ± σ across episodes) for{' '}
+            {config.meta.domainLabel}. Weights are a deployment-tunable policy.
           </p>
         </div>
         <div className="page-hero-labels">
+          <ScoringPopover scoring={config.scoring} />
           <SimLabel />
           {runs.length > 0 ? <MeasuredLabel /> : null}
         </div>
@@ -75,47 +118,71 @@ export function EvalsView({ config, measured }: Props) {
         <table className="evals-table">
           <thead>
             <tr>
-              <th>Metric</th>
-              <th>Baseline</th>
-              <th>Trained</th>
-              <th>Δ</th>
-              {runs.map((r) => (
-                <th key={r.modelId}>Measured · {r.modelShortName}</th>
-              ))}
+              <th>Policy / model</th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('composite')}>
+                  Composite{mark('composite')}
+                </button>
+              </th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('completion')}>
+                  Completion{mark('completion')}
+                </button>
+              </th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('safety')}>
+                  Safety{mark('safety')}
+                </button>
+              </th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('verification')}>
+                  Verification{mark('verification')}
+                </button>
+              </th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('efficiency')}>
+                  Efficiency{mark('efficiency')}
+                </button>
+              </th>
+              <th>
+                <button type="button" className="sort-th" onClick={() => onSort('taskCompleted')}>
+                  Task completed{mark('taskCompleted')}
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_ROWS.map((row) => {
-              const delta = row.lowerBetter
-                ? row.baseline - row.trained
-                : row.trained - row.baseline;
-              const good = delta >= 0;
+            {rows.map((row) => {
+              const m = row.metrics;
+              const c = m.compositeComponents;
+              const incomplete =
+                (m.taskCompleted?.numerator ?? 0) === 0 && row.episodeCount > 0;
               return (
-                <tr key={row.key}>
+                <tr
+                  key={row.id}
+                  className={`${row.kind}${incomplete ? ' incomplete-row' : ''}`}
+                >
                   <td>
-                    {row.label}
-                    {row.lowerBetter ? (
-                      <span className="hint"> · lower better</span>
+                    {row.name}
+                    <span className="hint">
+                      {' '}
+                      · {row.episodeCount} eps
+                      {row.kind === 'measured' ? ' · measured' : ' · simulated'}
+                    </span>
+                    {incomplete ? (
+                      <span className="incomplete-inline"> INCOMPLETE</span>
                     ) : null}
                   </td>
-                  <td className="num baseline">{pct(row.baseline)}</td>
-                  <td className="num trained">{pct(row.trained)}</td>
-                  <td className={`num delta ${good ? 'good' : 'bad'}`}>
-                    {good ? '+' : ''}
-                    {Math.round(delta * 100)} pts
+                  <td className={`num rank-composite ${row.kind}`}>
+                    {compositeCell(m)}
                   </td>
-                  {runs.map((r) => {
-                    const metric = r.metrics[row.key];
-                    const rate =
-                      metric && typeof metric === 'object' && 'rate' in metric
-                        ? metric.rate
-                        : null;
-                    return (
-                      <td key={r.modelId} className="num measured">
-                        {rate == null ? '—' : pct(rate)}
-                      </td>
-                    );
-                  })}
+                  <td className="num">{c ? c.completion.toFixed(1) : '—'}</td>
+                  <td className="num">{c ? c.safety.toFixed(1) : '—'}</td>
+                  <td className="num">{c ? c.verification.toFixed(1) : '—'}</td>
+                  <td className="num">{c ? c.efficiency.toFixed(1) : '—'}</td>
+                  <td className="num">
+                    {m.taskCompleted ? formatMetric(m.taskCompleted).replace(/^Task completed: /, '') : '—'}
+                  </td>
                 </tr>
               );
             })}

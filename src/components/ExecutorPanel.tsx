@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { isPickFailTrace } from '../copy/traces';
+import { skillByRole } from '../engine/episode';
 import type { TaskConfig, TraceLine } from '../types';
 
 interface Props {
@@ -8,6 +10,7 @@ interface Props {
 
 export function ExecutorPanel({ config, lines }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pickLabel = skillByRole(config, 'pick')?.label ?? 'pick';
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
@@ -21,14 +24,18 @@ export function ExecutorPanel({ config, lines }: Props) {
           {lines.length === 0 && (
             <div className="log-empty">Executor idle — no motor primitives dispatched…</div>
           )}
-          {lines.map((l) => (
-            <div
-              key={l.id}
-              className={`log-line executor${l.text.startsWith('OBS:') ? ' obs' : ''}`}
-            >
-              {l.text}
-            </div>
-          ))}
+          {lines.map((l) => {
+            const obs = l.text.startsWith('OBS:');
+            const pickFail = isPickFailTrace(l.text, pickLabel);
+            return (
+              <div
+                key={l.id}
+                className={`log-line executor${obs ? ' obs' : ''}${pickFail ? ' fail' : ''}`}
+              >
+                {l.text}
+              </div>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
       </div>
