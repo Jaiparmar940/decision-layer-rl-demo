@@ -57,11 +57,13 @@ export function Header({
       <div className="header-meta">
         <div className="header-title">{config.meta.title}</div>
         {live ? (
-          <StatusChip title="Episode id and RNG seed">
-            <strong>
-              {episodeId} // SEED {seed}
-            </strong>
-          </StatusChip>
+          <>
+            <StatusChip title="Episode id and RNG seed">
+              <strong>
+                {episodeId} // SEED {seed} // {mode.toUpperCase()}
+              </strong>
+            </StatusChip>
+          </>
         ) : (
           <StatusChip title="Current view">
             <strong>{VIEW_CHIP[view] ?? view.toUpperCase()}</strong>

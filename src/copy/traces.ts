@@ -197,6 +197,12 @@ export function obsPickFail(ctx: ObsCtx): string {
   return `OBS: grasp slip on ${ctx.itemLabel} · attempt ${ctx.attempt}`;
 }
 
+/** Live HUD: pick motor fail + grasp-slip observation. */
+export function isPickFailTrace(text: string, pickLabel = 'pick'): boolean {
+  if (text.startsWith('OBS: grasp slip')) return true;
+  return text.startsWith(`EXEC: ${pickLabel} `) && text.endsWith('→ fail');
+}
+
 // TODO(jaivir): rewrite
 export function obsPlaceFail(ctx: ObsCtx): string {
   return `OBS: placement unstable for ${ctx.itemLabel} · attempt ${ctx.attempt}`;

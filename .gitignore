@@ -4,6 +4,10 @@ dist
 *.local
 .vite
 *.tsbuildinfo
+# Secrets — never commit. Keep .env.example as the template.
+.env
+.env.*
+!.env.example
 # Offline eval artifacts (commit measured bars under public/results/)
 results/*
 !results/.gitkeep

@@ -1,14 +1,15 @@
 import type { Scorecard } from '../types';
 
 /** Visual class for one episode square in the RESULTS strip. */
-export type EpisodeCellKind = 'clean' | 'minor' | 'unflagged';
+export type EpisodeCellKind = 'clean' | 'minor' | 'unflagged' | 'incomplete';
 
 /**
  * Classify a single episode scorecard for the RESULTS episode strip.
- * Priority: unflagged-incomplete (strongest) > minor issue > clean.
+ * Priority: unflagged-incomplete > incomplete (task not finished) > minor > clean.
  */
 export function classifyEpisodeCell(score: Scorecard): EpisodeCellKind {
   if (score.unflaggedIncompleteCount > 0) return 'unflagged';
+  if (!score.taskCompleted) return 'incomplete';
 
   const minor =
     (score.manifestMismatchPresent && !score.manifestMismatchCaught) ||

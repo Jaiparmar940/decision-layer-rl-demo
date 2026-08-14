@@ -1,5 +1,5 @@
 import type { EpisodeState, TaskConfig } from '../types';
-import { getAttr } from '../engine/episode';
+import { getAttr, skillByRole } from '../engine/episode';
 
 interface Props {
   config: TaskConfig;
@@ -8,6 +8,9 @@ interface Props {
 }
 
 export function EnvironmentPanel({ config, state, revealActual }: Props) {
+  const pickId = skillByRole(config, 'pick')?.id ?? 'pick';
+  const last = state?.actions[state.actions.length - 1];
+
   return (
     <section className="panel">
       <div className="panel-header">{config.meta.environmentHeader}</div>
@@ -60,10 +63,18 @@ export function EnvironmentPanel({ config, state, revealActual }: Props) {
                 {state.seedData.items.map((it) => {
                   const attr = getAttr(config, it.attributeId);
                   const phase = state.itemPhase[it.id];
+                  const pickFailing =
+                    ((state.failCounts[`${pickId}:${it.id}`] ?? 0) > 0 &&
+                      phase !== 'placed' &&
+                      phase !== 'aside') ||
+                    (last?.kind === 'pick' &&
+                      last.itemId === it.id &&
+                      last.success === false);
                   const cls = [
                     'item-card',
                     phase === 'aside' ? 'aside' : '',
                     phase === 'placed' ? 'placed' : '',
+                    pickFailing ? 'pick-fail' : '',
                   ]
                     .filter(Boolean)
                     .join(' ');

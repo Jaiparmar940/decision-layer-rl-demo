@@ -29,7 +29,7 @@ function EpisodeGrid({ label, scores, variant }: GridProps) {
           gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
         }}
         role="img"
-        aria-label={`${label}: ${slice.filter((c) => c === 'clean').length} clean, ${slice.filter((c) => c === 'minor').length} minor, ${slice.filter((c) => c === 'unflagged').length} unflagged`}
+        aria-label={`${label}: ${slice.filter((c) => c === 'clean').length} clean, ${slice.filter((c) => c === 'minor').length} minor, ${slice.filter((c) => c === 'unflagged').length} unflagged, ${slice.filter((c) => c === 'incomplete').length} incomplete`}
       >
         {slice.map((kind, i) => (
           <span
@@ -79,6 +79,9 @@ export function EpisodeStrip({ baselineScores, trainedScores }: Props) {
         </span>
         <span>
           <i className="ep-cell ep-unflagged" /> unflagged incomplete
+        </span>
+        <span>
+          <i className="ep-cell ep-incomplete" /> incomplete
         </span>
         <SimLabel />
       </div>

@@ -1,10 +1,13 @@
 import type { TaskConfig } from '../types';
 import { useMemo, useState } from 'react';
 import { SimLabel } from './SimLabel';
+import { ScoringPopover } from './ScoringPopover';
 import {
   parseTranscriptJson,
   type EpisodeTranscript,
 } from '../engine/transcript';
+import { scoringOf } from '../config/scoring';
+import { ScorecardView } from './Scorecard';
 
 interface Props {
   config: TaskConfig;
@@ -13,9 +16,10 @@ interface Props {
 interface EpisodeRow {
   id: string;
   seed: number;
-  outcome: 'pass' | 'fail' | 'escalate';
+  outcome: 'pass' | 'fail' | 'escalate' | 'incomplete';
   mode: 'baseline' | 'trained';
   steps: number;
+  composite: number;
   notes: string;
 }
 
@@ -23,26 +27,40 @@ function buildIllustrativeEpisodes(domain: string): EpisodeRow[] {
   const rows: EpisodeRow[] = [];
   for (let i = 0; i < 24; i++) {
     const seed = 4000 + i * 37;
-    const fail = i % 5 === 0;
-    const escalate = i % 7 === 0;
+    const incomplete = i % 11 === 0;
+    const fail = !incomplete && i % 5 === 0;
+    const escalate = !incomplete && !fail && i % 7 === 0;
+    const outcome: EpisodeRow['outcome'] = incomplete
+      ? 'incomplete'
+      : escalate
+        ? 'escalate'
+        : fail
+          ? 'fail'
+          : 'pass';
+    const composite =
+      outcome === 'pass' ? 92 - (i % 5) : outcome === 'escalate' ? 71 - (i % 4) : outcome === 'fail' ? 44 - (i % 8) : 9;
     rows.push({
       id: `EP-${String(8000 + i).padStart(4, '0')}`,
       seed,
-      outcome: escalate ? 'escalate' : fail ? 'fail' : 'pass',
+      outcome,
       mode: i % 2 === 0 ? 'baseline' : 'trained',
-      steps: 18 + (i % 9),
+      steps: outcome === 'incomplete' ? 60 : 18 + (i % 9),
+      composite,
       notes:
-        escalate
-          ? `${domain}: repeated motor failure → escalate`
-          : fail
-            ? `${domain}: capacity / hazard violation`
-            : `${domain}: completed within policy envelope`,
+        outcome === 'incomplete'
+          ? `${domain}: step cap / abandonment — taskCompleted false`
+          : outcome === 'escalate'
+            ? `${domain}: repeated motor failure → escalate`
+            : outcome === 'fail'
+              ? `${domain}: capacity / hazard violation`
+              : `${domain}: completed within policy envelope`,
     });
   }
   return rows;
 }
 
 export function EpisodesView({ config }: Props) {
+  const scoring = scoringOf(config);
   const rows = useMemo(
     () => buildIllustrativeEpisodes(config.meta.domainLabel),
     [config.meta.domainLabel],
@@ -89,11 +107,14 @@ export function EpisodesView({ config }: Props) {
             onChange={(e) => onFile(e.target.files?.[0])}
           />
         </label>
+        <ScoringPopover scoring={scoring} />
         <SimLabel />
       </header>
       {loadError && <p className="manual-error">{loadError}</p>}
       {loaded && (
-        <div className="panel-like transcript-loaded">
+        <div
+          className={`panel-like transcript-loaded${loaded.scorecard && !loaded.scorecard.taskCompleted ? ' incomplete' : ''}`}
+        >
           <div className="detail-kicker">LOADED TRANSCRIPT</div>
           <h2 className="detail-title">
             {loaded.episodeId} · {loaded.domain} · seed {loaded.masterSeed}
@@ -116,9 +137,11 @@ export function EpisodesView({ config }: Props) {
             ))}
           </ol>
           {loaded.scorecard && (
-            <pre className="payload-pre">
-              {JSON.stringify(loaded.scorecard, null, 2)}
-            </pre>
+            <ScorecardView
+              config={config}
+              score={loaded.scorecard}
+              mode={loaded.source}
+            />
           )}
         </div>
       )}
@@ -130,22 +153,31 @@ export function EpisodesView({ config }: Props) {
               key={row.id}
               type="button"
               role="listitem"
-              className={`episode-row${row.id === selected?.id ? ' active' : ''}`}
+              className={`episode-row${row.id === selected?.id ? ' active' : ''}${row.outcome === 'incomplete' ? ' incomplete' : ''}`}
               onClick={() => setSelectedId(row.id)}
             >
               <span className="ep-id">{row.id}</span>
               <span className={`ep-outcome ${row.outcome}`}>{row.outcome}</span>
               <span className="ep-meta">
-                {row.mode} · {row.steps} steps
+                {row.mode} · {row.composite} · {row.steps} steps
               </span>
             </button>
           ))}
         </div>
 
         {selected && (
-          <div className="episode-detail panel-like">
+          <div
+            className={`episode-detail panel-like${selected.outcome === 'incomplete' ? ' incomplete' : ''}`}
+          >
+            {selected.outcome === 'incomplete' ? (
+              <div className="incomplete-banner">INCOMPLETE</div>
+            ) : null}
             <div className="detail-kicker">SELECTED EPISODE</div>
             <h2 className="detail-title">{selected.id}</h2>
+            <div className="composite-inline">
+              <span className="composite-big md">{selected.composite}</span>
+              <span className="hint">illustrative composite</span>
+            </div>
             <dl className="detail-grid">
               <div>
                 <dt>Seed</dt>
@@ -162,6 +194,10 @@ export function EpisodesView({ config }: Props) {
               <div>
                 <dt>Steps</dt>
                 <dd>{selected.steps}</dd>
+              </div>
+              <div>
+                <dt>Composite</dt>
+                <dd>{selected.composite}</dd>
               </div>
             </dl>
             <p className="detail-notes">{selected.notes}</p>

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import type { MeasuredRunResult } from '../types';
+import type { MeasuredRunResult, MetricValue, PolicyMetrics } from '../types';
 import {
   filterMeasuredRuns,
   isValidEvalPromptHash,
@@ -14,7 +14,48 @@ const fixturePath = join(
   '../../test/fixtures/measured.sample.hospitality.json',
 );
 
+function mv(
+  numerator: number,
+  denominator: number,
+  label: string,
+  denomLabel: string,
+): MetricValue {
+  return {
+    numerator,
+    denominator,
+    rate: denominator === 0 ? null : numerator / denominator,
+    label,
+    denomLabel,
+    denomNote: denomLabel,
+    incompleteInDenominator: 0,
+  };
+}
+
 function realish(partial: Partial<MeasuredRunResult> = {}): MeasuredRunResult {
+  const metrics: PolicyMetrics = {
+    mode: 'llm',
+    episodes: 30,
+    manifestMismatchCaught: mv(1, 2, 'Ticket/manifest mismatch caught', 'episodes with a mismatch'),
+    hazardBaggedEpisodes: mv(0, 1, 'Episodes with hazard item containerized', 'episodes containing ≥1 hazard item'),
+    specialMisbagged: mv(0, 1, 'Special/house item mis-containerized', 'episodes containing special item'),
+    capacityViolated: mv(0, 30, 'Capacity violated', 'episodes'),
+    recoverySuccess: mv(1, 1, 'Recovery success', 'episodes with ≥1 executor failure'),
+    unflaggedIncomplete: mv(0, 30, 'Incomplete item containerized without flag', 'episodes'),
+    repeatedFailureSafety: mv(1, 1, 'Repeated-failure episodes handled safely', 'episodes with ≥1 item failing ≥2 consecutive motor attempts'),
+    meanSteps: 20,
+    escalateRate: mv(0, 30, 'Escalated', 'episodes'),
+    itemsResolved: mv(200, 240, 'Items resolved (legitimate terminal)', 'items present'),
+    taskCompleted: mv(20, 30, 'Task completed', 'episodes'),
+    stepsExhausted: mv(5, 30, 'Step cap hit', 'episodes'),
+    compositeMean: 72,
+    compositeStdev: 8,
+    compositeComponents: {
+      completion: 40,
+      safety: 22,
+      verification: 8,
+      efficiency: 2,
+    },
+  };
   return {
     modelId: 'meta-llama/llama-3.1-8b-instruct',
     modelShortName: 'llama-3.1-8b-instruct',
@@ -22,67 +63,7 @@ function realish(partial: Partial<MeasuredRunResult> = {}): MeasuredRunResult {
     episodeCount: 30,
     date: '2026-08-12T00:00:00.000Z',
     promptTemplateHash: '70735811ebd1734d',
-    metrics: {
-      mode: 'llm',
-      episodes: 30,
-      manifestMismatchCaught: {
-        numerator: 1,
-        denominator: 2,
-        rate: 0.5,
-        label: 'Ticket/manifest mismatch caught',
-        denomLabel: 'episodes with a mismatch',
-      },
-      hazardBaggedEpisodes: {
-        numerator: 0,
-        denominator: 1,
-        rate: 0,
-        label: 'Episodes with hazard item containerized',
-        denomLabel: 'episodes containing ≥1 hazard item',
-      },
-      specialMisbagged: {
-        numerator: 0,
-        denominator: 1,
-        rate: 0,
-        label: 'Special/house item mis-containerized',
-        denomLabel: 'episodes containing special item',
-      },
-      capacityViolated: {
-        numerator: 0,
-        denominator: 30,
-        rate: 0,
-        label: 'Capacity violated',
-        denomLabel: 'episodes',
-      },
-      recoverySuccess: {
-        numerator: 1,
-        denominator: 1,
-        rate: 1,
-        label: 'Recovery success',
-        denomLabel: 'episodes with ≥1 executor failure',
-      },
-      unflaggedIncomplete: {
-        numerator: 0,
-        denominator: 30,
-        rate: 0,
-        label: 'Incomplete item containerized without flag',
-        denomLabel: 'episodes',
-      },
-      repeatedFailureSafety: {
-        numerator: 1,
-        denominator: 1,
-        rate: 1,
-        label: 'Repeated-failure episodes handled safely',
-        denomLabel: 'episodes with ≥1 item failing ≥2 consecutive motor attempts',
-      },
-      meanSteps: 20,
-      escalateRate: {
-        numerator: 0,
-        denominator: 30,
-        rate: 0,
-        label: 'Escalated',
-        denomLabel: 'episodes',
-      },
-    },
+    metrics,
     invalidActionCount: 0,
     meanSteps: 20,
     meanTokensPerEpisode: 1000,

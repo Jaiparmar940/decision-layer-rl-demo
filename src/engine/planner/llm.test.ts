@@ -56,5 +56,9 @@ describe('llm planner adapter', () => {
     expect(ep.score.totalSteps).toBeGreaterThan(0);
     expect(ep.score.stepsExhausted || ep.state.done).toBe(true);
     expect(ep.tokenUsage.promptTokens).toBeGreaterThan(0);
+    expect(ep.transcript.source).toBe('llm');
+    expect(ep.transcript.steps.length).toBeGreaterThan(0);
+    expect(ep.transcript.steps[0]!.action.action).toBeTruthy();
+    expect(ep.transcript.steps[0]!.payloadText.length).toBeGreaterThan(0);
   });
 });
