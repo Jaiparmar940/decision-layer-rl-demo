@@ -33,6 +33,8 @@ describe('deep-link view + domain', () => {
     expect(resolveDomain('?domain=genericFulfillment').meta.id).toBe(
       'genericFulfillment',
     );
+    expect(resolveDomainId('?domain=foodKitting')).toBe('foodKitting');
+    expect(resolveDomain('?domain=foodKitting').meta.id).toBe('foodKitting');
   });
 
   it('resolves sidebar views', () => {

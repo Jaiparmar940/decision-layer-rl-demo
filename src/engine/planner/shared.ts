@@ -227,30 +227,48 @@ export function nextMotorForItem(
 
   if (phase === 'finished' || (phase === 'prepared' && !skillByRole(config, 'finish')) || (phase === 'picked' && !skillByRole(config, 'prepare') && !skillByRole(config, 'finish'))) {
     const sid = skillIdForRole(config, 'place')!;
+    const believedType =
+      state.beliefs.find((b) => b.itemId === itemId)?.believedType ??
+      getItem(state, itemId).glanceType;
     const dest =
       containerId ??
       (hasOrders(config)
         ? matchingOrderContainer(
             state,
             config,
-            state.beliefs.find((b) => b.itemId === itemId)?.believedType ??
-              getItem(state, itemId).glanceType,
+            believedType,
+            getItem(state, itemId).destOrderId,
           )?.id
         : undefined);
+    const plannerLines = [
+      T.verifyLine({
+        step: state.step + 1,
+        action: config.skills.find((s) => s.id === sid)!.label,
+        itemLabel: ic.itemLabel,
+        success: true,
+        note: dest ? `dispatch → ${dest}` : 'dispatch',
+      }),
+    ];
+    if (dest && hasOrders(config)) {
+      const c = state.containers.find((x) => x.id === dest);
+      const order = state.seedData.orders.find((o) => o.id === c?.orderId);
+      const orderDef = config.orders?.find((o) => o.id === order?.id);
+      plannerLines.push(
+        T.routeToOrder({
+          itemLabel: ic.itemLabel,
+          typeLabel: typeLabel(config, believedType),
+          orderLabel: order?.label ?? dest,
+          containerId: dest,
+          dietRestricted: Boolean(orderDef?.dietRestricted),
+        }),
+      );
+    }
     return {
       kind: 'place',
       skillId: sid,
       itemId,
       containerId: dest,
-      plannerLines: [
-        T.verifyLine({
-          step: state.step + 1,
-          action: config.skills.find((s) => s.id === sid)!.label,
-          itemLabel: ic.itemLabel,
-          success: true,
-          note: dest ? `dispatch → ${dest}` : 'dispatch',
-        }),
-      ],
+      plannerLines,
     };
   }
 
@@ -291,7 +309,7 @@ export function doneAction(state: EpisodeState): PlannerAction {
   };
 }
 
-export function flagShortAction(state: EpisodeState): PlannerAction {
+export function flagShortAction(state: EpisodeState, config?: TaskConfig): PlannerAction {
   const unmet = unmetOrderLines(state);
   return {
     kind: 'escalate',
@@ -303,13 +321,14 @@ export function flagShortAction(state: EpisodeState): PlannerAction {
           missing: l.missing,
         })),
         flagged: true,
+        refill: Boolean(config?.ui.shortFlagAsRefill),
       }),
     ],
     meta: { flagShortShip: true },
   };
 }
 
-export function holdShortAction(state: EpisodeState): PlannerAction {
+export function holdShortAction(state: EpisodeState, config?: TaskConfig): PlannerAction {
   const unmet = unmetOrderLines(state);
   return {
     kind: 'escalate',
@@ -322,6 +341,7 @@ export function holdShortAction(state: EpisodeState): PlannerAction {
         })),
         flagged: false,
         held: true,
+        refill: Boolean(config?.ui.shortFlagAsRefill),
       }),
     ],
     meta: { holdShort: true },
@@ -362,7 +382,7 @@ export function trainedLockContainer(
   if (!typeConfirmed(state, itemId)) return undefined;
   const item = getItem(state, itemId);
   if (isForeignObject(config, item) || !item.trueType) return undefined;
-  const dest = matchingOrderContainer(state, config, item.trueType);
+  const dest = matchingOrderContainer(state, config, item.trueType, item.destOrderId);
   if (dest) ctx.intendedContainerByItem[itemId] = dest.id;
   return dest?.id;
 }

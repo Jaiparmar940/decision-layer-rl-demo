@@ -54,19 +54,31 @@ function sampleAttribute(config: TaskConfig, rng: Rng, forceSpecial: boolean): s
   return pickWeighted(rng, weights);
 }
 
-function sampleLinenAttribute(config: TaskConfig, rng: Rng): string {
-  const weights = config.itemAttributes
-    .filter((a) => a.hazardClass !== 'foreignObject')
-    .map((a) => ({
-      id: a.id,
-      w: config.attributeWeights[a.id] ?? 0.1,
-    }));
-  if (!weights.length) return normalAttrId(config);
-  return pickWeighted(rng, weights);
-}
-
 function foreignAttrIds(config: TaskConfig): string[] {
   return config.itemAttributes.filter((a) => a.hazardClass === 'foreignObject').map((a) => a.id);
+}
+
+function conditionHazardIds(config: TaskConfig): string[] {
+  return config.itemAttributes
+    .filter((a) => a.hazard && a.hazardClass !== 'foreignObject')
+    .map((a) => a.id);
+}
+
+const DEFAULT_SHORT_EPISODE_RATE = 0.25;
+const DEFAULT_MAX_SHORT = 2;
+const DEFAULT_HAZARD_EXTRA_RATE = 0.55;
+
+function sampleTypeId(config: TaskConfig, rng: Rng): string | null {
+  const types = config.itemTypes ?? [];
+  if (!types.length) return null;
+  return types[randInt(rng, 0, types.length - 1)]!.id;
+}
+
+function claimedFromStreamCount(config: TaskConfig, rng: Rng, streamCount: number): number {
+  const deltaRange = randInt(rng, config.manifest.discrepancyMin, config.manifest.discrepancyMax);
+  const sign = chance(rng, 0.5) ? 1 : -1;
+  const delta = deltaRange === 0 ? 0 : sign * deltaRange;
+  return Math.max(1, streamCount + delta);
 }
 
 function emptyItemTypeFields(): Pick<Item, 'trueType' | 'glanceType' | 'destOrderId'> {
@@ -86,28 +98,42 @@ function generateOrderEpisode(
   const selected = shuffle(rng, pool).slice(0, Math.max(1, take));
 
   const orders: EpisodeOrder[] = [];
-  const rawItems: Omit<Item, 'id' | 'index' | 'label'>[] = [];
-
   for (const order of selected) {
-    const lines: EpisodeOrder['lines'] = [];
+    orders.push({
+      id: order.id,
+      label: order.label,
+      lines: order.lines.map((line) => ({
+        typeId: line.typeId,
+        count: line.count,
+        supplied: line.count,
+      })),
+    });
+  }
+
+  const shortRate = config.shortShip?.shortEpisodeRate ?? DEFAULT_SHORT_EPISODE_RATE;
+  const maxShort = config.shortShip?.maxShort ?? DEFAULT_MAX_SHORT;
+  if (chance(rng, shortRate)) {
+    const candidates = orders.flatMap((o) => o.lines.filter((l) => l.count > 0));
+    if (candidates.length) {
+      const line = candidates[randInt(rng, 0, candidates.length - 1)]!;
+      const drop = randInt(rng, 1, Math.min(maxShort, line.count));
+      line.supplied = line.count - drop;
+    }
+  }
+
+  const normalId = normalAttrId(config);
+  const rawItems: Omit<Item, 'id' | 'index' | 'label'>[] = [];
+  for (const order of orders) {
     for (const line of order.lines) {
-      let supplied = line.count;
-      const ss = config.shortShip;
-      if (ss && chance(rng, ss.underSupplyRate) && line.count > 0) {
-        const drop = randInt(rng, 1, Math.min(ss.maxShort, line.count));
-        supplied = line.count - drop;
-      }
-      lines.push({ typeId: line.typeId, count: line.count, supplied });
-      for (let i = 0; i < supplied; i++) {
+      for (let i = 0; i < line.supplied; i++) {
         rawItems.push({
-          attributeId: sampleLinenAttribute(config, rng),
+          attributeId: normalId,
           trueType: line.typeId,
           glanceType: null,
           destOrderId: order.id,
         });
       }
     }
-    orders.push({ id: order.id, label: order.label, lines });
   }
 
   const foreignIds = foreignAttrIds(config);
@@ -118,6 +144,21 @@ function generateOrderEpisode(
       rawItems.push({
         attributeId: foreignIds[randInt(rng, 0, foreignIds.length - 1)]!,
         trueType: null,
+        glanceType: null,
+        destOrderId: null,
+      });
+    }
+  }
+
+  const hazardIds = conditionHazardIds(config);
+  const wantHazard =
+    hazardIds.length > 0 && chance(rng, config.hazardExtraEpisodeRate ?? DEFAULT_HAZARD_EXTRA_RATE);
+  if (wantHazard) {
+    const n = randInt(rng, 1, 2);
+    for (let i = 0; i < n; i++) {
+      rawItems.push({
+        attributeId: hazardIds[randInt(rng, 0, hazardIds.length - 1)]!,
+        trueType: sampleTypeId(config, rng),
         glanceType: null,
         destOrderId: null,
       });
@@ -168,11 +209,7 @@ export function generateEpisodeSeed(
     items = gen.items;
     orders = gen.orders;
     containerCapacity = gen.containerCapacity;
-    const ticketed = orders.reduce(
-      (n, o) => n + o.lines.reduce((m, l) => m + l.count, 0),
-      0,
-    );
-    manifestClaimed = ticketed;
+    manifestClaimed = claimedFromStreamCount(config, rng, items.length);
     streamOn = streamEnabled(config);
     if (streamOn) {
       const a = config.arrivalStream!;
@@ -208,10 +245,7 @@ export function generateEpisodeSeed(
       }
     }
 
-    const deltaRange = randInt(rng, config.manifest.discrepancyMin, config.manifest.discrepancyMax);
-    const sign = chance(rng, 0.5) ? 1 : -1;
-    const delta = deltaRange === 0 ? 0 : sign * deltaRange;
-    manifestClaimed = Math.max(1, itemCount + delta);
+    manifestClaimed = claimedFromStreamCount(config, rng, itemCount);
 
     containerCapacity = randInt(
       rng,

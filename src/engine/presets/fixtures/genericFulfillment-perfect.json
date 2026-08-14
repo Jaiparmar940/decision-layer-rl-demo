@@ -2,7 +2,7 @@
   "id": "genericFulfillment-perfect",
   "domain": "genericFulfillment",
   "kind": "perfect",
-  "masterSeed": 3006,
+  "masterSeed": 3000,
   "maxSteps": 60,
   "actions": [
     {
@@ -29,199 +29,305 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-1",
+      "containerId": "order-1-b",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-2",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-2",
       "containerId": "order-3-c",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-3",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-3",
+      "containerId": "order-2-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-4",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-4",
+      "containerId": "order-3-c",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-5",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-5",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-5",
+      "containerId": "order-1-b",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-6",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-6",
+      "containerId": "order-3-c",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-7",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-7",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-7",
+      "containerId": "order-1-a",
       "reason": "perfect: place"
     },
     {
       "action": "setAside",
       "skillId": "setAside",
-      "itemId": "item-2",
+      "itemId": "item-8",
       "reason": "perfect: exception set-aside"
     },
     {
       "action": "pick",
       "skillId": "pick",
-      "itemId": "item-3",
+      "itemId": "item-9",
       "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
-      "itemId": "item-3",
+      "itemId": "item-9",
       "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
-      "itemId": "item-3",
-      "containerId": "order-2-main",
+      "itemId": "item-9",
+      "containerId": "order-2-b",
       "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
-      "itemId": "item-4",
+      "itemId": "item-10",
       "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
-      "itemId": "item-4",
+      "itemId": "item-10",
       "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
-      "itemId": "item-4",
+      "itemId": "item-10",
+      "containerId": "order-2-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-11",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-11",
+      "containerId": "order-2-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-12",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-12",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-12",
+      "containerId": "order-2-b",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-13",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-13",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-13",
+      "containerId": "order-1-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-14",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-14",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-14",
+      "containerId": "order-1-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-15",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-15",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-15",
+      "containerId": "order-3-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-16",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-16",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-16",
+      "containerId": "order-3-a",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-17",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-17",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-17",
       "containerId": "order-3-c",
       "reason": "perfect: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-5",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-5",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-5",
-      "containerId": "order-3-a",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-6",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-6",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-6",
-      "containerId": "order-2-main",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-7",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-7",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-7",
-      "containerId": "order-3-a",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-8",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-8",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-8",
-      "containerId": "order-2-main",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "reposition",
-      "skillId": "pack",
-      "itemId": "item-8",
-      "reason": "perfect: reposition after fail"
-    },
-    {
-      "action": "placeIncomplete",
-      "skillId": "pack",
-      "itemId": "item-8",
-      "containerId": "order-2-main",
-      "flagIncomplete": true,
-      "reason": "perfect: repeated fail — flag incomplete"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-9",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-9",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-9",
-      "containerId": "order-2-main",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-10",
-      "reason": "perfect: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-10",
-      "reason": "perfect: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-10",
-      "containerId": "order-2-main",
-      "reason": "perfect: place"
-    },
-    {
-      "action": "reposition",
-      "skillId": "pack",
-      "itemId": "item-10",
-      "reason": "perfect: reposition after fail"
-    },
-    {
-      "action": "placeIncomplete",
-      "skillId": "pack",
-      "itemId": "item-10",
-      "containerId": "order-2-main",
-      "flagIncomplete": true,
-      "reason": "perfect: repeated fail — flag incomplete"
-    },
-    {
-      "action": "escalate",
-      "flagShortShip": true,
-      "reason": "perfect: flag short-ship"
     }
   ]
 }

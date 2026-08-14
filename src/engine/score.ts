@@ -1,5 +1,6 @@
 import type { EpisodeState, Item, Scorecard, TaskConfig } from '../types';
 import {
+  hasGenuineShort,
   isCrossOrderPlacement,
   isForeignObject,
   itemInContainer,
@@ -272,7 +273,7 @@ export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard
   );
 
   const unmet = unmetOrderLines(state);
-  const shortShipPresent = unmet.length > 0;
+  const shortShipPresent = hasGenuineShort(state.seedData.orders);
   const unflaggedShortShip =
     shortShipPresent && !state.flags.shortShipFlagged && !state.flags.shortShipHeld;
   const unflaggedShortShipLineCount = unflaggedShortShip ? unmet.length : 0;

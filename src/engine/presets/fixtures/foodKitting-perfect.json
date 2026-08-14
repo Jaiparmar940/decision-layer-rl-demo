@@ -1,213 +1,231 @@
 {
-  "id": "genericFulfillment-recovery",
-  "domain": "genericFulfillment",
-  "kind": "recovery",
-  "masterSeed": 3002,
+  "id": "foodKitting-perfect",
+  "domain": "foodKitting",
+  "kind": "perfect",
+  "masterSeed": 4006,
   "maxSteps": 60,
   "actions": [
     {
       "action": "checkManifest",
-      "reason": "recovery: verify ticket"
+      "reason": "perfect: verify ticket"
     },
     {
       "action": "reInspect",
-      "reason": "recovery: inspect"
+      "reason": "perfect: inspect"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-1",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-1",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-1",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-protein",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-2",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-2",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-2",
-      "containerId": "order-2-a",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-3",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-3",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-3",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-4",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-4",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-4",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-5",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-5",
-      "reason": "recovery: prepare"
-    },
-    {
-      "action": "reposition",
-      "skillId": "prep",
-      "itemId": "item-5",
-      "reason": "recovery: reposition to accumulate / recover"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-5",
-      "containerId": "order-3-a",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-6",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-6",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-6",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
+      "containerId": "ramen-classic-cutlery",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-7",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-7",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-7",
-      "containerId": "order-3-a",
-      "reason": "recovery: place"
+      "containerId": "medical-lowna-protein",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-8",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-8",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-8",
-      "containerId": "order-2-a",
-      "reason": "recovery: place"
-    },
-    {
-      "action": "reposition",
-      "skillId": "pack",
-      "itemId": "item-8",
-      "reason": "recovery: reposition to accumulate / recover"
-    },
-    {
-      "action": "placeIncomplete",
-      "skillId": "pack",
-      "itemId": "item-8",
-      "containerId": "order-3-a",
-      "flagIncomplete": true,
-      "reason": "recovery: flag after repeated failure"
+      "containerId": "ramen-classic-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "pick",
       "skillId": "pick",
       "itemId": "item-9",
-      "reason": "recovery: pick"
+      "reason": "perfect: pick"
     },
     {
       "action": "prepare",
       "skillId": "prep",
       "itemId": "item-9",
-      "reason": "recovery: prepare"
+      "reason": "perfect: prepare"
     },
     {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-9",
-      "containerId": "order-2-a",
-      "reason": "recovery: place"
+      "containerId": "ramen-classic-seasoning",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-10",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-10",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-10",
+      "containerId": "ramen-classic-cutlery",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-11",
+      "reason": "perfect: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-11",
+      "containerId": "ramen-classic-seasoning",
+      "reason": "perfect: place"
     },
     {
       "action": "escalate",
       "flagShortShip": true,
-      "reason": "recovery: flag short-ship"
+      "reason": "perfect: flag short-ship"
     }
   ]
 }

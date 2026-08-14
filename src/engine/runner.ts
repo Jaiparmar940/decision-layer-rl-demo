@@ -414,6 +414,7 @@ export function applyPlannerAction(
           })),
           flagged: Boolean(action.meta.flagShortShip),
           held: Boolean(action.meta.holdShort),
+          refill: Boolean(config.ui.shortFlagAsRefill),
         }),
         state.step,
       ),

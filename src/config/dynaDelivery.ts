@@ -63,8 +63,8 @@ export const dynaDeliveryConfig: TaskConfig = {
         { typeId: 'bathTowel', count: 2 },
       ],
       containers: [
-        { id: 'hotel-a-small', label: 'HOTEL-A small', capacity: 6 },
-        { id: 'hotel-a-large', label: 'HOTEL-A large', capacity: 6 },
+        { id: 'hotel-a-small', label: 'HOTEL-A small', capacity: 6, foldProfile: 'small' },
+        { id: 'hotel-a-large', label: 'HOTEL-A large', capacity: 6, foldProfile: 'large' },
       ],
     },
     {
@@ -75,7 +75,7 @@ export const dynaDeliveryConfig: TaskConfig = {
         { typeId: 'bathTowel', count: 2 },
       ],
       containers: [
-        { id: 'hotel-b-large', label: 'HOTEL-B large', capacity: 8 },
+        { id: 'hotel-b-large', label: 'HOTEL-B large', capacity: 8, foldProfile: 'large' },
       ],
     },
     {
@@ -86,15 +86,15 @@ export const dynaDeliveryConfig: TaskConfig = {
         { typeId: 'handTowel', count: 2 },
       ],
       containers: [
-        { id: 'airline-c-garment', label: 'AIRLINE-C garment', capacity: 6 },
-        { id: 'airline-c-small', label: 'AIRLINE-C small', capacity: 4 },
+        { id: 'airline-c-garment', label: 'AIRLINE-C garment', capacity: 6, foldProfile: 'garment' },
+        { id: 'airline-c-small', label: 'AIRLINE-C small', capacity: 4, foldProfile: 'small' },
       ],
     },
   ],
   ordersPerEpisode: { min: 2, max: 3 },
   arrivalStream: { enabled: true, batchSizeMin: 2, batchSizeMax: 3 },
   qualityGate: { uniformStack: true },
-  shortShip: { underSupplyRate: 0.4, maxShort: 2 },
+  shortShip: { shortEpisodeRate: 0.25, maxShort: 2 },
   skills: [
     { id: 'pick', label: 'pick', baseFailRate: 0.05, motor: true, role: 'pick' },
     { id: 'fold', label: 'fold', baseFailRate: 0.2, motor: true, role: 'finish' },
@@ -111,7 +111,7 @@ export const dynaDeliveryConfig: TaskConfig = {
   manifest: {
     label: 'ORDER TICKETS',
     discrepancyMin: 0,
-    discrepancyMax: 0,
+    discrepancyMax: 2,
   },
   itemCountMin: 8,
   itemCountMax: 16,
@@ -128,7 +128,7 @@ export const dynaDeliveryConfig: TaskConfig = {
       catchManifestMismatch: 0.95,
       setAsideHazard: 0.97,
       detectSpecialItem: 0.95,
-      recoverySuccess: 0.9,
+      recoverySuccess: 0.95,
       redundantReinspectEpisode: 0.15,
       hazardGateAfterSpecialMiss: 0,
     },

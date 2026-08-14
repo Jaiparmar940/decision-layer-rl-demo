@@ -25,6 +25,7 @@ import {
 import {
   inboundRemaining,
   isForeignObject,
+  placedTrueTypeCount,
   typeConfirmed,
   unmetOrderLines,
 } from '../fulfillment';
@@ -147,11 +148,14 @@ export const trainedPlanner: PlannerFn = (
     }
 
     if (fails === 1) {
-      // reposition once then retry
+      // reposition once then retry (if the failed skill was place, keep the SKU dest)
+      const destId =
+        last.containerId ?? trainedLockContainer(state, config, ctx, last.itemId);
       return wrap({
         kind: 'reposition',
         skillId: last.skillId,
         itemId: last.itemId,
+        containerId: destId,
         plannerLines: [
           T.recoveryDecision({
             itemLabel: ic.itemLabel,
@@ -168,10 +172,12 @@ export const trainedPlanner: PlannerFn = (
     if (fails >= 2) {
       // bag-unfolded + flag — recovery success
       const placeSkill = skillIdForRole(config, 'place')!;
+      const destId = trainedLockContainer(state, config, ctx, last.itemId);
       return wrap({
         kind: 'placeIncomplete',
         skillId: placeSkill,
         itemId: last.itemId,
+        containerId: destId,
         plannerLines: [
           T.recoveryDecision({
             itemLabel: ic.itemLabel,
@@ -230,7 +236,7 @@ export const trainedPlanner: PlannerFn = (
       });
     }
     if (hasOrders(config) && unmetOrderLines(state).length > 0) {
-      return wrap(flagShortAction(state));
+      return wrap(flagShortAction(state, config));
     }
     return wrap(doneAction(state));
   }
@@ -331,9 +337,14 @@ export const trainedPlanner: PlannerFn = (
   ) {
     const item = getItem(state, itemId);
     if (!destId && item.trueType && state.containers.length < config.containers.maxContainers) {
-      const order = state.seedData.orders.find((o) =>
-        o.lines.some((l) => l.typeId === item.trueType),
-      );
+      const needing = state.seedData.orders.find((o) => {
+        const line = o.lines.find((l) => l.typeId === item.trueType);
+        if (!line) return false;
+        return placedTrueTypeCount(state, o.id, item.trueType!) < line.count;
+      });
+      const order =
+        needing ??
+        state.seedData.orders.find((o) => o.lines.some((l) => l.typeId === item.trueType));
       if (order) {
         return wrap(openContainerForOrder(state, config, order.id));
       }

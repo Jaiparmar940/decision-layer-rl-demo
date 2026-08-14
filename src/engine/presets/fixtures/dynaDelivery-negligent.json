@@ -126,24 +126,44 @@
       "reason": "negligent: skip verify, force-place unflagged"
     },
     {
-      "action": "escalate",
-      "reason": "negligent: done"
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-16",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
     },
     {
-      "action": "escalate",
-      "reason": "negligent: done"
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-17",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
     },
     {
-      "action": "escalate",
-      "reason": "negligent: done"
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-18",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
     },
     {
-      "action": "escalate",
-      "reason": "negligent: done"
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-19",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
     },
     {
-      "action": "escalate",
-      "reason": "negligent: done"
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-20",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
     },
     {
       "action": "escalate",

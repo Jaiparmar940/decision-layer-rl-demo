@@ -3,6 +3,7 @@ import { hospitalityConfig } from '../../config/hospitality';
 import { foldingConfig } from '../../config/folding';
 import { dynaDeliveryConfig } from '../../config/dynaDelivery';
 import { genericFulfillmentConfig } from '../../config/genericFulfillment';
+import { foodKittingConfig } from '../../config/foodKitting';
 import { PRESET_FIXTURES, runActionScript, presetMeetsKind } from './index';
 import type { TaskConfig } from '../../types';
 
@@ -11,11 +12,12 @@ const CONFIG: Record<string, TaskConfig> = {
   folding: foldingConfig,
   dynaDelivery: dynaDeliveryConfig,
   genericFulfillment: genericFulfillmentConfig,
+  foodKitting: foodKittingConfig,
 };
 
-describe('preset grader classification (12 fixtures)', () => {
-  it('has twelve checked-in scripts', () => {
-    expect(PRESET_FIXTURES).toHaveLength(12);
+describe('preset grader classification (15 fixtures)', () => {
+  it('has fifteen checked-in scripts', () => {
+    expect(PRESET_FIXTURES).toHaveLength(15);
   });
 
   for (const fixture of PRESET_FIXTURES) {

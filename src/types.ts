@@ -49,6 +49,8 @@ export interface OrderContainerDef {
   id?: string;
   label?: string;
   capacity?: number;
+  /** If set, the tote starts committed to this fold/stack family. */
+  foldProfile?: string;
 }
 
 export interface OrderDef {
@@ -56,6 +58,8 @@ export interface OrderDef {
   label: string;
   lines: OrderLineDef[];
   containers: OrderContainerDef[];
+  /** If true, routing the wrong type here is a diet/allergen violation (trace copy). */
+  dietRestricted?: boolean;
 }
 
 export interface ArrivalStreamConfig {
@@ -71,9 +75,12 @@ export interface QualityGateConfig {
 }
 
 export interface ShortShipConfig {
-  /** Probability each order line is under-supplied. */
-  underSupplyRate: number;
-  /** Max units dropped from an under-supplied line. */
+  /**
+   * Probability the episode has a genuine short: drop 1–maxShort units
+   * from exactly one randomly chosen order line. Default 0.25.
+   */
+  shortEpisodeRate: number;
+  /** Max units dropped from that one line. */
   maxShort: number;
 }
 
@@ -192,6 +199,8 @@ export interface TaskConfig {
   ui: {
     itemLabel: string;
     itemLabelPlural: string;
+    /** Short-ship traces use FLAG-REFILL / depleted-bin copy when true. */
+    shortFlagAsRefill?: boolean;
   };
   /**
    * Deployment-tunable composite policy. Not a universal metric —
@@ -219,8 +228,13 @@ export interface TaskConfig {
   arrivalStream?: ArrivalStreamConfig;
   qualityGate?: QualityGateConfig;
   shortShip?: ShortShipConfig;
-  /** Extra P(episode includes ≥1 foreignObject item) on top of attribute weights. */
+  /** Extra P(episode includes ≥1 foreignObject item) on top of the order-line stream. */
   foreignObjectEpisodeRate?: number;
+  /**
+   * P(episode includes extra condition-hazard items) added on top of the
+   * order-line stream — never substituted for required units. Default 0.55.
+   */
+  hazardExtraEpisodeRate?: number;
 }
 
 export interface Item {

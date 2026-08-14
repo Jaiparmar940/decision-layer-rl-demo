@@ -3,12 +3,14 @@ import { hospitalityConfig } from './hospitality';
 import { foldingConfig } from './folding';
 import { dynaDeliveryConfig } from './dynaDelivery';
 import { genericFulfillmentConfig } from './genericFulfillment';
+import { foodKittingConfig } from './foodKitting';
 
 const configs: Record<string, TaskConfig> = {
   hospitality: hospitalityConfig,
   folding: foldingConfig,
   dynaDelivery: dynaDeliveryConfig,
   genericFulfillment: genericFulfillmentConfig,
+  foodKitting: foodKittingConfig,
 };
 
 export function resolveDomain(search?: string): TaskConfig {
@@ -25,5 +27,11 @@ export function listDomains(): string[] {
   return Object.keys(configs);
 }
 
-export { hospitalityConfig, foldingConfig, dynaDeliveryConfig, genericFulfillmentConfig };
+export {
+  hospitalityConfig,
+  foldingConfig,
+  dynaDeliveryConfig,
+  genericFulfillmentConfig,
+  foodKittingConfig,
+};
 export { DEFAULT_SCORING, scoringOf } from './scoring';

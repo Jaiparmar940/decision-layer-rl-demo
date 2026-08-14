@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dynaDeliveryConfig } from '../config/dynaDelivery';
 import { genericFulfillmentConfig } from '../config/genericFulfillment';
+import { foodKittingConfig } from '../config/foodKitting';
 import { hospitalityConfig } from '../config/hospitality';
 import { foldingConfig } from '../config/folding';
 import { generateEpisodeSeed, createInitialState } from './episode';
@@ -8,6 +9,9 @@ import { applyPlannerAction, runEpisode } from './runner';
 import { compositeScore } from './composite';
 import { emptyScorecard } from './score';
 import { mulberry32 } from './rng';
+import { hasGenuineShort, isForeignObject } from './fulfillment';
+import { batchMasterSeed } from './batch';
+import type { TaskConfig } from '../types';
 
 describe('sort-to-order: seed-reproducible stream arrivals', () => {
   const seeds = [1, 42, 8813, 4242];
@@ -42,6 +46,25 @@ describe('sort-to-order: seed-reproducible stream arrivals', () => {
       expect(concat(train.state.arrivalBatches)).toEqual(train.state.seedData.arrivalOrder);
     });
   }
+
+  it('foodKitting also shares ground truth across modes', () => {
+    const seed = 777;
+    const base = runEpisode({
+      config: foodKittingConfig,
+      masterSeed: seed,
+      mode: 'baseline',
+      episodeSerial: 1,
+    });
+    const train = runEpisode({
+      config: foodKittingConfig,
+      masterSeed: seed,
+      mode: 'trained',
+      episodeSerial: 1,
+    });
+    expect(base.state.seedData.items.map((i) => i.glanceType)).toEqual(
+      train.state.seedData.items.map((i) => i.glanceType),
+    );
+  });
 
   it('genericFulfillment also shares ground truth across modes', () => {
     const seed = 777;
@@ -87,6 +110,35 @@ describe('sort-to-order: type confusion empirical rate', () => {
     expect(bathTrue).toBeGreaterThan(200);
     expect(Math.abs(handAsBath / handTrue - 0.15)).toBeLessThanOrEqual(0.03);
     expect(Math.abs(bathAsHand / bathTrue - 0.15)).toBeLessThanOrEqual(0.03);
+  });
+
+  it('foodKitting sauceSachet↔gfSauceSachet and seasoningStd↔seasoningLowNa within ±3pts', () => {
+    const n = 1000;
+    const counts: Record<string, { n: number; confused: number }> = {
+      sauceSachet: { n: 0, confused: 0 },
+      gfSauceSachet: { n: 0, confused: 0 },
+      seasoningStd: { n: 0, confused: 0 },
+      seasoningLowNa: { n: 0, confused: 0 },
+    };
+    const pair: Record<string, string> = {
+      sauceSachet: 'gfSauceSachet',
+      gfSauceSachet: 'sauceSachet',
+      seasoningStd: 'seasoningLowNa',
+      seasoningLowNa: 'seasoningStd',
+    };
+    for (let i = 0; i < n; i++) {
+      const { seedData } = generateEpisodeSeed(foodKittingConfig, 9000 + i * 17, i + 1);
+      for (const it of seedData.items) {
+        const row = it.trueType ? counts[it.trueType] : undefined;
+        if (!row || !it.trueType) continue;
+        row.n += 1;
+        if (it.glanceType === pair[it.trueType]) row.confused += 1;
+      }
+    }
+    for (const [id, row] of Object.entries(counts)) {
+      expect(row.n, id).toBeGreaterThan(100);
+      expect(Math.abs(row.confused / row.n - 0.15), id).toBeLessThanOrEqual(0.03);
+    }
   });
 });
 
@@ -140,6 +192,43 @@ describe('sort-to-order: type confirm is handle-only', () => {
     }
     expect(found).toBe(true);
   });
+
+  it('foodKitting pick emits handle confirmation OBS for a confusable pair', () => {
+    let found = false;
+    for (let seed = 1; seed < 120 && !found; seed++) {
+      const { seedData } = generateEpisodeSeed(foodKittingConfig, seed, 1);
+      const state = createInitialState(seedData, 'llm', foodKittingConfig);
+      const target = seedData.items.find(
+        (it) =>
+          state.visibleItemIds.includes(it.id) &&
+          (it.trueType === 'sauceSachet' || it.trueType === 'gfSauceSachet') &&
+          it.glanceType &&
+          it.trueType !== it.glanceType,
+      );
+      if (!target) continue;
+      found = true;
+      for (let i = 0; i < 8 && state.itemPhase[target.id] !== 'picked'; i++) {
+        applyPlannerAction(
+          state,
+          foodKittingConfig,
+          {
+            kind: 'pick',
+            skillId: 'pick',
+            itemId: target.id,
+            plannerLines: ['pick'],
+          },
+          mulberry32(100 + i),
+        );
+      }
+      expect(state.itemPhase[target.id]).toBe('picked');
+      const afterPick = state.beliefs.find((b) => b.itemId === target.id)!;
+      expect(afterPick.typeConfirmed).toBe(true);
+      expect(afterPick.believedType).toBe(target.trueType);
+      const obs = state.executorLines.map((l) => l.text).join('\n');
+      expect(obs).toMatch(/OBS: handle .+ — type confirms as /);
+    }
+    expect(found).toBe(true);
+  });
 });
 
 describe('sort-to-order: arrival OBS', () => {
@@ -180,6 +269,81 @@ describe('sort-to-order: composite completion uses order lines', () => {
     });
     const c = compositeScore(score, hospitalityConfig.scoring);
     expect(c.components.completion).toBeCloseTo(25, 1);
+  });
+});
+
+function ticketedUnits(seed: { orders: { lines: { count: number; supplied: number }[] }[] }) {
+  return seed.orders.reduce(
+    (n, o) => n + o.lines.reduce((m, l) => m + l.count, 0),
+    0,
+  );
+}
+
+function suppliedUnits(seed: { orders: { lines: { supplied: number }[] }[] }) {
+  return seed.orders.reduce(
+    (n, o) => n + o.lines.reduce((m, l) => m + l.supplied, 0),
+    0,
+  );
+}
+
+function assertFulfillableByDefault(config: TaskConfig) {
+  const n = 1000;
+  let shortEps = 0;
+  let claimedEqualsStream = 0;
+  let claimedEqualsTicketed = 0;
+  let multiLineShort = 0;
+
+  for (let i = 0; i < n; i++) {
+    const { seedData } = generateEpisodeSeed(config, batchMasterSeed(i), i + 1);
+    const required = seedData.items.filter((it) => it.destOrderId != null);
+    expect(required.every((it) => it.attributeId === 'normal')).toBe(true);
+    expect(required.length).toBe(suppliedUnits(seedData));
+
+    const extras = seedData.items.filter((it) => it.destOrderId == null);
+    for (const it of extras) {
+      const foreign = isForeignObject(config, it);
+      const attr = config.itemAttributes.find((a) => a.id === it.attributeId)!;
+      expect(foreign || attr.hazard).toBe(true);
+    }
+
+    const shortLines = seedData.orders.flatMap((o) =>
+      o.lines.filter((l) => l.supplied < l.count),
+    );
+    if (shortLines.length > 1) multiLineShort += 1;
+    if (shortLines.length === 1) {
+      const line = shortLines[0]!;
+      const drop = line.count - line.supplied;
+      expect(drop).toBeGreaterThanOrEqual(1);
+      expect(drop).toBeLessThanOrEqual(2);
+    }
+    if (hasGenuineShort(seedData.orders)) shortEps += 1;
+
+    const stream = seedData.items.length;
+    const delta = Math.abs(seedData.manifestClaimed - stream);
+    expect(delta).toBeLessThanOrEqual(2);
+    if (seedData.manifestClaimed === stream) claimedEqualsStream += 1;
+    if (seedData.manifestClaimed === ticketedUnits(seedData)) claimedEqualsTicketed += 1;
+  }
+
+  expect(multiLineShort).toBe(0);
+  expect(shortEps / n).toBeGreaterThanOrEqual(0.2);
+  expect(shortEps / n).toBeLessThanOrEqual(0.3);
+  // Claimed tracks the stream with noise, not the order-line sum.
+  expect(claimedEqualsTicketed / n).toBeLessThan(0.5);
+  expect(claimedEqualsStream / n).toBeGreaterThan(0.2);
+}
+
+describe('sort-to-order: fulfillable-by-default generation', () => {
+  it('dynaDelivery: stream from order lines; extras on top; independent ticket noise', () => {
+    assertFulfillableByDefault(dynaDeliveryConfig);
+  });
+
+  it('genericFulfillment: stream from order lines; extras on top; independent ticket noise', () => {
+    assertFulfillableByDefault(genericFulfillmentConfig);
+  });
+
+  it('foodKitting: stream from order lines; extras on top; independent ticket noise', () => {
+    assertFulfillableByDefault(foodKittingConfig);
   });
 });
 

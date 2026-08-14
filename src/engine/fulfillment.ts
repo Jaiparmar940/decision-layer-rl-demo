@@ -106,10 +106,17 @@ export function placedTrueTypeCount(
   for (const c of containersForOrder(state, orderId)) {
     for (const id of c.itemIds) {
       const it = state.seedData.items.find((i) => i.id === id);
-      if (it?.trueType === typeId) n += 1;
+      // Extras (foreign / added hazards) have destOrderId null and never
+      // substitute for required order-line units.
+      if (it?.trueType === typeId && it.destOrderId != null) n += 1;
     }
   }
   return n;
+}
+
+/** True when generation dropped units from at least one order line. */
+export function hasGenuineShort(orders: EpisodeOrder[]): boolean {
+  return orders.some((o) => o.lines.some((l) => l.supplied < l.count));
 }
 
 export interface UnmetLine {
@@ -197,30 +204,51 @@ export function firstContainerWithSpace(state: EpisodeState): Container | undefi
   return state.containers.find(containerHasSpace) ?? state.containers[0];
 }
 
+function intendedFoldProfile(config: TaskConfig, c: Container): string | null {
+  if (!c.orderId) return null;
+  const order = config.orders?.find((o) => o.id === c.orderId);
+  if (!order) return null;
+  const def = order.containers.find((d, i) => (d.id ?? `${c.orderId}-c${i}`) === c.id);
+  return def?.foldProfile ?? null;
+}
+
+function profileAllows(config: TaskConfig, c: Container, profile: string | null): boolean {
+  const intended = intendedFoldProfile(config, c);
+  if (intended && profile && intended !== profile) return false;
+  if (c.committedFoldProfile && profile && c.committedFoldProfile !== profile) return false;
+  return true;
+}
+
 export function matchingOrderContainer(
   state: EpisodeState,
   config: TaskConfig,
   typeId: string | null,
+  destOrderId?: string | null,
 ): Container | undefined {
   if (!typeId) return firstContainerWithSpace(state);
   const profile = foldProfile(config, typeId);
+  const destOrder = destOrderId
+    ? state.seedData.orders.find((o) => o.id === destOrderId)
+    : undefined;
   const needing = state.seedData.orders.filter((o) => {
     const line = o.lines.find((l) => l.typeId === typeId);
     if (!line) return false;
     return placedTrueTypeCount(state, o.id, typeId) < line.count;
   });
-  const pool = needing.length ? needing : state.seedData.orders.filter((o) =>
-    o.lines.some((l) => l.typeId === typeId),
-  );
+  const pool = destOrder
+    ? [destOrder]
+    : needing.length
+      ? needing
+      : state.seedData.orders.filter((o) => o.lines.some((l) => l.typeId === typeId));
   for (const order of pool) {
     const cs = containersForOrder(state, order.id);
     const open = cs.find(
-      (c) =>
-        containerHasSpace(c) &&
-        (!c.committedFoldProfile || c.committedFoldProfile === profile),
+      (c) => containerHasSpace(c) && profileAllows(config, c, profile),
     );
     if (open) return open;
-    const empty = cs.find((c) => c.itemIds.length === 0);
+    const empty = cs.find(
+      (c) => c.itemIds.length === 0 && profileAllows(config, c, profile),
+    );
     if (empty) return empty;
   }
   return undefined;

@@ -55,8 +55,8 @@ export const genericFulfillmentConfig: TaskConfig = {
         { typeId: 'skuB', count: 2 },
       ],
       containers: [
-        { id: 'order-1-a', label: 'ORDER-1 tote A', capacity: 6 },
-        { id: 'order-1-b', label: 'ORDER-1 tote B', capacity: 6 },
+        { id: 'order-1-a', label: 'ORDER-1 tote A', capacity: 6, foldProfile: 'A' },
+        { id: 'order-1-b', label: 'ORDER-1 tote B', capacity: 6, foldProfile: 'B' },
       ],
     },
     {
@@ -66,7 +66,10 @@ export const genericFulfillmentConfig: TaskConfig = {
         { typeId: 'skuC', count: 3 },
         { typeId: 'skuB', count: 2 },
       ],
-      containers: [{ id: 'order-2-main', label: 'ORDER-2 tote', capacity: 8 }],
+      containers: [
+        { id: 'order-2-a', label: 'ORDER-2 tote A', capacity: 6, foldProfile: 'A' },
+        { id: 'order-2-b', label: 'ORDER-2 tote B', capacity: 6, foldProfile: 'B' },
+      ],
     },
     {
       id: 'ORDER-3',
@@ -76,15 +79,15 @@ export const genericFulfillmentConfig: TaskConfig = {
         { typeId: 'skuA', count: 2 },
       ],
       containers: [
-        { id: 'order-3-c', label: 'ORDER-3 tote C', capacity: 6 },
-        { id: 'order-3-a', label: 'ORDER-3 tote A', capacity: 4 },
+        { id: 'order-3-c', label: 'ORDER-3 tote C', capacity: 6, foldProfile: 'C' },
+        { id: 'order-3-a', label: 'ORDER-3 tote A', capacity: 4, foldProfile: 'A' },
       ],
     },
   ],
   ordersPerEpisode: { min: 2, max: 3 },
   arrivalStream: { enabled: true, batchSizeMin: 2, batchSizeMax: 3 },
   qualityGate: { uniformStack: true },
-  shortShip: { underSupplyRate: 0.4, maxShort: 2 },
+  shortShip: { shortEpisodeRate: 0.25, maxShort: 2 },
   skills: [
     { id: 'pick', label: 'pick', baseFailRate: 0.05, motor: true, role: 'pick' },
     { id: 'prep', label: 'prep', baseFailRate: 0.1, motor: true, role: 'prepare' },
@@ -101,7 +104,7 @@ export const genericFulfillmentConfig: TaskConfig = {
   manifest: {
     label: 'ORDER LINES',
     discrepancyMin: 0,
-    discrepancyMax: 0,
+    discrepancyMax: 2,
   },
   itemCountMin: 8,
   itemCountMax: 16,
@@ -118,7 +121,7 @@ export const genericFulfillmentConfig: TaskConfig = {
       catchManifestMismatch: 0.95,
       setAsideHazard: 0.97,
       detectSpecialItem: 0.95,
-      recoverySuccess: 0.9,
+      recoverySuccess: 0.95,
       redundantReinspectEpisode: 0.15,
       hazardGateAfterSpecialMiss: 0,
     },

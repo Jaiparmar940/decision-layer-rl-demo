@@ -261,25 +261,44 @@ export interface RouteOrderCtx {
   typeLabel: string;
   orderLabel: string;
   containerId: string;
+  /** Diet/allergen-controlled SKU run (GF / low-sodium). */
+  dietRestricted?: boolean;
 }
 
 // TODO(jaivir): rewrite
 export function routeToOrder(ctx: RouteOrderCtx): string {
-  return `ROUTE: ${ctx.itemLabel} [${ctx.typeLabel}] → ${ctx.orderLabel} (${ctx.containerId})`;
+  const diet = ctx.dietRestricted
+    ? ' — diet/allergen-controlled run; confirm type before place'
+    : '';
+  return `ROUTE: ${ctx.itemLabel} [${ctx.typeLabel}] → ${ctx.orderLabel} (${ctx.containerId})${diet}`;
 }
 
 export interface ShortShipCtx {
   lines: Array<{ orderLabel: string; typeId: string; missing: number }>;
   flagged: boolean;
   held?: boolean;
+  /** Bin-depletion / refill vocabulary (food kitting). */
+  refill?: boolean;
 }
 
 // TODO(jaivir): rewrite
 export function shortShipLine(ctx: ShortShipCtx): string {
   const detail = ctx.lines
-    .map((l) => `${l.orderLabel} ${l.typeId} short ${l.missing}`)
+    .map((l) =>
+      ctx.refill
+        ? `${l.orderLabel} ${l.typeId} bin short ${l.missing}`
+        : `${l.orderLabel} ${l.typeId} short ${l.missing}`,
+    )
     .join('; ');
-  if (ctx.held) return `HOLD: stream ended with unmet lines — ${detail}`;
-  if (ctx.flagged) return `FLAG-SHORT: ${detail}`;
-  return `SHORT: finish with unflagged unmet lines — ${detail}`;
+  if (ctx.held) {
+    return ctx.refill
+      ? `HOLD: bins depleted mid-run — ${detail}`
+      : `HOLD: stream ended with unmet lines — ${detail}`;
+  }
+  if (ctx.flagged) {
+    return ctx.refill ? `FLAG-REFILL: ${detail}` : `FLAG-SHORT: ${detail}`;
+  }
+  return ctx.refill
+    ? `SHORT: finish with unflagged depleted bins — ${detail}`
+    : `SHORT: finish with unflagged unmet lines — ${detail}`;
 }

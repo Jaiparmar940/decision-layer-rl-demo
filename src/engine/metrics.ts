@@ -231,7 +231,7 @@ function buildPolicyMetrics(
       scores.filter((s) => s.unflaggedShortShip).length,
       scores.filter((s) => s.shortShipPresent).length,
       'Unflagged short-ship',
-      'episodes with unmet order lines',
+      'episodes with a genuine short',
       incompleteCount(scores.filter((s) => s.shortShipPresent)),
     ),
     ordersCompletedCorrectly: metric(

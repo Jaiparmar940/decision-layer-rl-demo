@@ -1,8 +1,8 @@
 {
-  "id": "genericFulfillment-recovery",
-  "domain": "genericFulfillment",
+  "id": "foodKitting-recovery",
+  "domain": "foodKitting",
   "kind": "recovery",
-  "masterSeed": 3002,
+  "masterSeed": 4002,
   "maxSteps": 60,
   "actions": [
     {
@@ -29,89 +29,103 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-1",
-      "containerId": "order-3-c",
+      "containerId": "ramen-classic-seasoning",
       "reason": "recovery: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-2",
-      "reason": "recovery: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-2",
-      "reason": "recovery: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-2",
-      "containerId": "order-2-a",
-      "reason": "recovery: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-3",
-      "reason": "recovery: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-3",
-      "reason": "recovery: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-3",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-4",
-      "reason": "recovery: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-4",
-      "reason": "recovery: prepare"
-    },
-    {
-      "action": "place",
-      "skillId": "pack",
-      "itemId": "item-4",
-      "containerId": "order-3-c",
-      "reason": "recovery: place"
-    },
-    {
-      "action": "pick",
-      "skillId": "pick",
-      "itemId": "item-5",
-      "reason": "recovery: pick"
-    },
-    {
-      "action": "prepare",
-      "skillId": "prep",
-      "itemId": "item-5",
-      "reason": "recovery: prepare"
     },
     {
       "action": "reposition",
-      "skillId": "prep",
-      "itemId": "item-5",
+      "skillId": "pack",
+      "itemId": "item-1",
       "reason": "recovery: reposition to accumulate / recover"
     },
     {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-2",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-2",
+      "containerId": "medical-lowna-protein",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pack",
+      "itemId": "item-2",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "pack",
+      "itemId": "item-2",
+      "containerId": "medical-lowna-protein",
+      "flagIncomplete": true,
+      "reason": "recovery: flag after repeated failure"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-3",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-3",
+      "containerId": "medical-lowna-seasoning",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-4",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-4",
+      "containerId": "ramen-classic-seasoning",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-5",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-5",
+      "reason": "recovery: prepare"
+    },
+    {
       "action": "place",
       "skillId": "pack",
       "itemId": "item-5",
-      "containerId": "order-3-a",
+      "containerId": "medical-lowna-seasoning",
       "reason": "recovery: place"
     },
     {
@@ -130,7 +144,7 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-6",
-      "containerId": "order-3-c",
+      "containerId": "ramen-classic-seasoning",
       "reason": "recovery: place"
     },
     {
@@ -149,7 +163,7 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-7",
-      "containerId": "order-3-a",
+      "containerId": "medical-lowna-seasoning",
       "reason": "recovery: place"
     },
     {
@@ -168,7 +182,7 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-8",
-      "containerId": "order-2-a",
+      "containerId": "medical-lowna-protein",
       "reason": "recovery: place"
     },
     {
@@ -181,7 +195,7 @@
       "action": "placeIncomplete",
       "skillId": "pack",
       "itemId": "item-8",
-      "containerId": "order-3-a",
+      "containerId": "medical-lowna-protein",
       "flagIncomplete": true,
       "reason": "recovery: flag after repeated failure"
     },
@@ -201,8 +215,52 @@
       "action": "place",
       "skillId": "pack",
       "itemId": "item-9",
-      "containerId": "order-2-a",
+      "containerId": "ramen-classic-cutlery",
       "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-10",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-10",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-10",
+      "containerId": "medical-lowna-seasoning",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "recovery: pick"
+    },
+    {
+      "action": "prepare",
+      "skillId": "prep",
+      "itemId": "item-11",
+      "reason": "recovery: prepare"
+    },
+    {
+      "action": "place",
+      "skillId": "pack",
+      "itemId": "item-11",
+      "containerId": "ramen-classic-cutlery",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-12",
+      "reason": "recovery: set aside exception"
     },
     {
       "action": "escalate",
