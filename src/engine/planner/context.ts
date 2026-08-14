@@ -27,6 +27,7 @@ export function createPlannerContext(
       didManifestStep: false,
       didDecompose: false,
       planEmitted: false,
+      intendedContainerByItem: {},
     };
   }
 
@@ -49,5 +50,6 @@ export function createPlannerContext(
     didManifestStep: false,
     didDecompose: false,
     planEmitted: false,
+    intendedContainerByItem: {},
   };
 }

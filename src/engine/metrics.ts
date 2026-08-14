@@ -207,6 +207,39 @@ function buildPolicyMetrics(
     compositeMean: composites.mean,
     compositeStdev: composites.stdev,
     compositeComponents: composites.components,
+    misroutedItems: metric(
+      scores.reduce((a, s) => a + s.misroutedItemCount, 0),
+      scores.reduce((a, s) => a + s.misroutedItemDenom, 0),
+      'Misrouted items (cross-order)',
+      'items with a destination order',
+      incompleteCount(scores.filter((s) => s.misroutedItemDenom > 0)),
+    ),
+    foreignObjectContainerized: metric(
+      scores.reduce((a, s) => a + s.foreignObjectContainerized, 0),
+      scores.reduce((a, s) => a + s.foreignObjectCount, 0),
+      'Foreign objects containerized',
+      'foreign-object items present',
+      incompleteCount(scores.filter((s) => s.foreignObjectCount > 0)),
+    ),
+    typeMisfoldPlacements: metric(
+      scores.reduce((a, s) => a + s.typeMisfoldPlacements, 0),
+      scores.reduce((a, s) => a + s.typeMisfoldDenom, 0),
+      'Type-misfold placements',
+      'typed items (glance vs truth)',
+    ),
+    unflaggedShortShip: metric(
+      scores.filter((s) => s.unflaggedShortShip).length,
+      scores.filter((s) => s.shortShipPresent).length,
+      'Unflagged short-ship',
+      'episodes with a genuine short',
+      incompleteCount(scores.filter((s) => s.shortShipPresent)),
+    ),
+    ordersCompletedCorrectly: metric(
+      scores.reduce((a, s) => a + s.ordersCompletedCorrectly, 0),
+      scores.reduce((a, s) => a + s.ordersTotal, 0),
+      'Orders completed correctly',
+      'orders present',
+    ),
   };
 }
 

@@ -63,6 +63,17 @@ export function pickWeighted(
   return weights[weights.length - 1]!.id;
 }
 
+export function shuffle<T>(rng: Rng, items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = randInt(rng, 0, i);
+    const tmp = a[i]!;
+    a[i] = a[j]!;
+    a[j] = tmp;
+  }
+  return a;
+}
+
 export function formatEpisodeId(n: number): string {
   return `EP-${String(n).padStart(4, '0')}`;
 }

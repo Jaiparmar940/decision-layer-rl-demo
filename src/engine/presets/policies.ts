@@ -1,6 +1,13 @@
 import type { EpisodeState, TaskConfig } from '../../types';
 import type { LlmActionJson } from '../planner/llm';
 import { activeContainer, getAttr, skillByRole } from '../episode';
+import {
+  hasOrders,
+  inboundRemaining,
+  isForeignObject,
+  matchingOrderContainer,
+  unmetOrderLines,
+} from '../fulfillment';
 
 function placeSkill(config: TaskConfig): string {
   return skillByRole(config, 'place')?.id ?? 'bag';
@@ -19,7 +26,9 @@ function asideSkill(config: TaskConfig): string {
 }
 
 function unresolved(state: EpisodeState) {
+  const visible = new Set(state.visibleItemIds);
   return state.seedData.items.filter((it) => {
+    if (state.seedData.streamEnabled && !visible.has(it.id)) return false;
     const p = state.itemPhase[it.id];
     return p !== 'placed' && p !== 'aside';
   });
@@ -95,9 +104,23 @@ function nextPipeline(
       reason: `${reason}: finish`,
     };
   }
-  const c = activeContainer(state);
+  const dest =
+    hasOrders(config)
+      ? matchingOrderContainer(
+          state,
+          config,
+          state.beliefs.find((b) => b.itemId === itemId)?.believedType ??
+            state.seedData.items.find((i) => i.id === itemId)?.trueType ??
+            null,
+        )
+      : activeContainer(state);
+  const c = dest ?? activeContainer(state);
   if (c.itemIds.length >= c.capacity) {
-    return { action: 'openContainer', reason: `${reason}: open container` };
+    return {
+      action: 'openContainer',
+      orderId: c.orderId,
+      reason: `${reason}: open container`,
+    };
   }
   return {
     action: 'place',
@@ -121,11 +144,21 @@ export function nextPerfectAction(
   }
   const left = unresolved(state);
   if (left.length === 0) {
+    if (inboundRemaining(state) > 0) {
+      return { action: 'reInspect', reason: 'perfect: wait for next arrival' };
+    }
+    if (hasOrders(config) && unmetOrderLines(state).length > 0) {
+      return {
+        action: 'escalate',
+        flagShortShip: true,
+        reason: 'perfect: flag short-ship',
+      };
+    }
     return { action: 'escalate', reason: 'perfect: complete' };
   }
   const target = left[0]!;
   const attr = getAttr(config, target.attributeId);
-  if (attr.hazard || attr.special) {
+  if (attr.hazard || attr.special || isForeignObject(config, target)) {
     const last = state.actions[state.actions.length - 1];
     if (last && !last.success && last.itemId === target.id && last.skillId) {
       return nextPipeline(state, config, target.id, 'perfect');
@@ -205,6 +238,16 @@ export function nextRecoveryAction(
     }) ?? unresolved(state)[0];
 
   if (!focus) {
+    if (inboundRemaining(state) > 0) {
+      return { action: 'reInspect', reason: 'recovery: wait for next arrival' };
+    }
+    if (hasOrders(config) && unmetOrderLines(state).length > 0) {
+      return {
+        action: 'escalate',
+        flagShortShip: true,
+        reason: 'recovery: flag short-ship',
+      };
+    }
     return { action: 'escalate', reason: 'recovery: complete' };
   }
 

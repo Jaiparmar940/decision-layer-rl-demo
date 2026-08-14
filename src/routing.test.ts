@@ -27,6 +27,16 @@ describe('deep-link view + domain', () => {
     expect(resolveDomain('?domain=folding').meta.id).toBe('folding');
   });
 
+  it('sort-to-order domains resolve', () => {
+    expect(resolveDomainId('?domain=dynaDelivery')).toBe('dynaDelivery');
+    expect(resolveDomain('?domain=dynaDelivery').meta.id).toBe('dynaDelivery');
+    expect(resolveDomain('?domain=genericFulfillment').meta.id).toBe(
+      'genericFulfillment',
+    );
+    expect(resolveDomainId('?domain=foodKitting')).toBe('foodKitting');
+    expect(resolveDomain('?domain=foodKitting').meta.id).toBe('foodKitting');
+  });
+
   it('resolves sidebar views', () => {
     expect(resolveView('?view=episodes')).toBe('episodes');
     expect(resolveView('?view=evals')).toBe('evals');
