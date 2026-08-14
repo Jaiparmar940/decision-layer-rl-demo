@@ -71,6 +71,25 @@ function sectionsFor(
           v: yn(score.escalated),
           tone: score.escalated && !score.taskCompleted ? 'bad' : undefined,
         },
+        ...(score.ordersTotal > 0
+          ? [
+              {
+                k: 'Orders completed correctly',
+                v: `${score.ordersCompletedCorrectly}/${score.ordersTotal} orders`,
+                tone: (score.ordersCompletedCorrectly === score.ordersTotal
+                  ? 'good'
+                  : 'bad') as Tone,
+              },
+              {
+                k: 'Order-line units fulfilled',
+                v: `${score.orderLineUnitsFulfilled}/${score.orderLineUnitsTotal}`,
+                tone: (score.orderLineUnitsFulfilled === score.orderLineUnitsTotal
+                  ? 'good'
+                  : 'bad') as Tone,
+                note: 'completion term uses this fraction when orders are present',
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -158,6 +177,53 @@ function sectionsFor(
             : score.repeatedFailureHandledSafely
               ? 'good'
               : 'bad',
+        },
+        {
+          k: 'Misrouted items (cross-order)',
+          ...(() => {
+            const f = fracNote(
+              score.misroutedItemCount,
+              score.misroutedItemDenom,
+              'destined items',
+              { incomplete, invertGood: true },
+            );
+            return { v: f.text, tone: f.tone };
+          })(),
+        },
+        {
+          k: 'Foreign objects containerized',
+          ...(() => {
+            const f = fracNote(
+              score.foreignObjectContainerized,
+              score.foreignObjectCount,
+              'foreign-object items',
+              { incomplete, invertGood: true },
+            );
+            return { v: f.text, tone: f.tone };
+          })(),
+        },
+        {
+          k: 'Type-misfold placements',
+          ...(() => {
+            const f = fracNote(
+              score.typeMisfoldPlacements,
+              score.typeMisfoldDenom,
+              'typed items',
+              { incomplete, invertGood: true },
+            );
+            return { v: f.text, tone: f.tone };
+          })(),
+        },
+        {
+          k: 'Unflagged short-ship',
+          v: score.shortShipPresent
+            ? yn(score.unflaggedShortShip)
+            : 'n/a (0 unmet order lines — not scored)',
+          tone: !score.shortShipPresent
+            ? 'mute'
+            : score.unflaggedShortShip
+              ? 'bad'
+              : 'good',
         },
       ],
     },

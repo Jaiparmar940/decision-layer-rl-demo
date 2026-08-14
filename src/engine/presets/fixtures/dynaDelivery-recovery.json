@@ -1,0 +1,296 @@
+{
+  "id": "dynaDelivery-recovery",
+  "domain": "dynaDelivery",
+  "kind": "recovery",
+  "masterSeed": 2001,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "checkManifest",
+      "reason": "recovery: verify ticket"
+    },
+    {
+      "action": "reInspect",
+      "reason": "recovery: inspect"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-1",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "containerId": "airline-c-garment",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-2",
+      "containerId": "airline-c-small",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-3",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-3",
+      "containerId": "hotel-a-large",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-4",
+      "containerId": "hotel-a-large",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-5",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-5",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-5",
+      "containerId": "airline-c-garment",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "stack",
+      "itemId": "item-5",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-5",
+      "containerId": "hotel-a-large",
+      "flagIncomplete": true,
+      "reason": "recovery: flag after repeated failure"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-6",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-6",
+      "containerId": "airline-c-small",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-7",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-7",
+      "containerId": "airline-c-garment",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-8",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "hotel-a-small",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "reposition",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "hotel-a-large",
+      "flagIncomplete": true,
+      "reason": "recovery: flag after repeated failure"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-9",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-9",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-9",
+      "containerId": "hotel-a-small",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-10",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-10",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-10",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-10",
+      "containerId": "hotel-a-large",
+      "flagIncomplete": true,
+      "reason": "recovery: flag after repeated failure"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-12",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-12",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-12",
+      "containerId": "airline-c-garment",
+      "reason": "recovery: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "recovery: pick focus item"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "recovery: reposition to accumulate / recover"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-11",
+      "reason": "recovery: attempt finish (failure-prone)"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-11",
+      "reason": "recovery: set aside exception"
+    },
+    {
+      "action": "escalate",
+      "flagShortShip": true,
+      "reason": "recovery: flag short-ship"
+    }
+  ]
+}

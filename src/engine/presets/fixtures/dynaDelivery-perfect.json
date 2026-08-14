@@ -1,0 +1,263 @@
+{
+  "id": "dynaDelivery-perfect",
+  "domain": "dynaDelivery",
+  "kind": "perfect",
+  "masterSeed": 2002,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "checkManifest",
+      "reason": "perfect: verify ticket"
+    },
+    {
+      "action": "reInspect",
+      "reason": "perfect: inspect"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-1",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-1",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "containerId": "hotel-a-small",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-2",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-2",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-2",
+      "containerId": "airline-c-small",
+      "flagIncomplete": true,
+      "reason": "perfect: repeated fail — flag incomplete"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-3",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-3",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-3",
+      "containerId": "hotel-a-small",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pick",
+      "itemId": "item-4",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-4",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-4",
+      "containerId": "airline-c-garment",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-5",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-6",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-6",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-6",
+      "containerId": "hotel-a-large",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-7",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-7",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-7",
+      "containerId": "airline-c-garment",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-8",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "reposition",
+      "skillId": "fold",
+      "itemId": "item-8",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "hotel-a-small",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "setAside",
+      "skillId": "setAside",
+      "itemId": "item-9",
+      "reason": "perfect: exception set-aside"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-10",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-10",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-10",
+      "containerId": "hotel-a-large",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-11",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-11",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-11",
+      "containerId": "airline-c-garment",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-12",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "reposition",
+      "skillId": "pick",
+      "itemId": "item-12",
+      "reason": "perfect: reposition after fail"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-12",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-12",
+      "containerId": "airline-c-garment",
+      "reason": "perfect: place"
+    },
+    {
+      "action": "pick",
+      "skillId": "pick",
+      "itemId": "item-13",
+      "reason": "perfect: pick"
+    },
+    {
+      "action": "finish",
+      "skillId": "fold",
+      "itemId": "item-13",
+      "reason": "perfect: finish"
+    },
+    {
+      "action": "place",
+      "skillId": "stack",
+      "itemId": "item-13",
+      "containerId": "airline-c-small",
+      "reason": "perfect: place"
+    }
+  ]
+}

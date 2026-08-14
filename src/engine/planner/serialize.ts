@@ -1,5 +1,6 @@
 import type { ActionKind, EpisodeState, TaskConfig } from '../../types';
 import { getAttr } from '../episode';
+import { isItemVisible, typeLabel } from '../fulfillment';
 
 const ACTION_WINDOW = 15;
 
@@ -33,6 +34,9 @@ export interface SerializedPlannerView {
     /** Belief only — never ground-truth until inspected */
     believedAttribute: string | null;
     believedAttributeLabel: string | null;
+    believedType: string | null;
+    believedTypeLabel: string | null;
+    typeConfirmed: boolean;
     inspected: boolean;
     inContainer: boolean;
     setAside: boolean;
@@ -42,7 +46,16 @@ export interface SerializedPlannerView {
     fill: number;
     capacity: number;
     itemIds: string[];
+    orderId?: string;
+    committedFoldProfile?: string | null;
+    label?: string;
   }>;
+  orders?: Array<{
+    id: string;
+    label: string;
+    lines: Array<{ typeId: string; count: number }>;
+  }>;
+  inboundRemaining?: number;
   heldItemId: string | null;
   availableActions: Array<{
     kind: ActionKind;
@@ -93,25 +106,33 @@ export function serializePlannerView(
   );
   const setAside = new Set(state.setAsideIds);
 
-  const items = state.seedData.items.map((it) => {
-    const belief = state.beliefs.find((b) => b.itemId === it.id);
-    const inspected = Boolean(belief?.inspected);
-    // Only expose attribute when inspected — otherwise unknown
-    const believedId = inspected ? belief?.attributeId ?? null : null;
-    const believedLabel =
-      believedId != null ? getAttr(config, believedId).label : null;
+  const items = state.seedData.items
+    .filter((it) => isItemVisible(state, it.id))
+    .map((it) => {
+      const belief = state.beliefs.find((b) => b.itemId === it.id);
+      const inspected = Boolean(belief?.inspected);
+      // Only expose attribute when inspected — otherwise unknown
+      const believedId = inspected ? belief?.attributeId ?? null : null;
+      const believedLabel =
+        believedId != null ? getAttr(config, believedId).label : null;
+      // Type glance is assigned at arrival (not a ground-truth leak).
+      const believedType = belief?.believedType ?? it.glanceType;
+      const believedTypeLabel = believedType ? typeLabel(config, believedType) : null;
 
-    return {
-      id: it.id,
-      label: it.label,
-      phase: state.itemPhase[it.id] ?? 'raw',
-      believedAttribute: believedId,
-      believedAttributeLabel: believedLabel,
-      inspected,
-      inContainer: inContainer.has(it.id),
-      setAside: setAside.has(it.id),
-    };
-  });
+      return {
+        id: it.id,
+        label: it.label,
+        phase: state.itemPhase[it.id] ?? 'raw',
+        believedAttribute: believedId,
+        believedAttributeLabel: believedLabel,
+        believedType,
+        believedTypeLabel,
+        typeConfirmed: Boolean(belief?.typeConfirmed),
+        inspected,
+        inContainer: inContainer.has(it.id),
+        setAside: setAside.has(it.id),
+      };
+    });
 
   const skillIds = config.skills.map((s) => s.id);
   const motorKinds: ActionKind[] = [
@@ -151,7 +172,7 @@ export function serializePlannerView(
     manifest: {
       label: config.manifest.label,
       claimedCount: state.seedData.manifestClaimed,
-      visibleItemCount: state.seedData.items.length,
+      visibleItemCount: state.visibleItemIds.length,
     },
     items,
     containers: state.containers.map((c) => ({
@@ -159,7 +180,22 @@ export function serializePlannerView(
       fill: c.itemIds.length,
       capacity: c.capacity,
       itemIds: [...c.itemIds],
+      orderId: c.orderId,
+      committedFoldProfile: c.committedFoldProfile ?? null,
+      label: c.label,
     })),
+    ...(state.seedData.orders.length
+      ? {
+          orders: state.seedData.orders.map((o) => ({
+            id: o.id,
+            label: o.label,
+            lines: o.lines.map((l) => ({ typeId: l.typeId, count: l.count })),
+          })),
+        }
+      : {}),
+    ...(state.seedData.streamEnabled
+      ? { inboundRemaining: state.inboundQueue.length }
+      : {}),
     heldItemId: state.heldItemId,
     availableActions,
     lastExecutorObs,

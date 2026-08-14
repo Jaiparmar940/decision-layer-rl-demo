@@ -483,6 +483,8 @@ a.brand:hover .brand-name {
   font-size: 9px;
   letter-spacing: 0.06em;
   color: var(--text-dim);
+  margin-right: 4px;
+  margin-top: 2px;
 }
 
 .attr-chip.hazard {

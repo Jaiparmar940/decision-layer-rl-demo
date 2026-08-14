@@ -3,13 +3,16 @@ import * as T from '../../copy/traces';
 import {
   activeContainer,
   getAttr,
+  getItem,
   skillByRole,
   trueAttr,
 } from '../episode';
 import type { Rng } from '../rng';
 import {
+  baselineLockContainer,
   doneAction,
   emitGroundAndPlan,
+  hasOrders,
   itemCtx,
   needsCapacitySplit,
   nextMotorForItem,
@@ -17,6 +20,7 @@ import {
   setAsideAction,
   skillIdForRole,
 } from './shared';
+import { inboundRemaining, isForeignObject } from '../fulfillment';
 import type { PlannerAction, PlannerEpisodeContext, PlannerFn } from './types';
 
 export const baselinePlanner: PlannerFn = (
@@ -146,20 +150,42 @@ export const baselinePlanner: PlannerFn = (
 
   const itemId = nextRawItem(state);
   if (!itemId) {
+    if (inboundRemaining(state) > 0) {
+      // Workspace empty but stream remains — wait for the next admit wave.
+      return wrap({
+        kind: 'reInspect',
+        plannerLines: [
+          T.inspectLine({
+            itemCount: state.visibleItemIds.length,
+            revealedHazards: 0,
+            revealedSpecial: 0,
+          }),
+        ],
+      });
+    }
+    // Unmet lines + forceDone = unflagged short-ship (baseline flaw).
     return wrap(doneAction(state));
   }
 
   const trueA = getAttr(config, trueAttr(state, itemId));
   const ic = itemCtx(state, config, itemId);
   const phase = state.itemPhase[itemId]!;
+  const destId = baselineLockContainer(state, config, ctx, itemId);
 
   // Decide set-aside vs bag for hazard/special at start of processing
   if (phase === 'raw') {
+    if (hasOrders(config) && isForeignObject(config, getItem(state, itemId))) {
+      if (ctx.bagHazard) {
+        const motor = nextMotorForItem(state, config, itemId, destId)!;
+        return wrap({ ...motor, plannerLines: [...motor.plannerLines] });
+      }
+      return wrap(setAsideAction(state, config, itemId, 'foreign object — do not containerize'));
+    }
     if (trueA.special) {
       if (ctx.missSpecial) {
         // fall through to process as normal
         const lines = [T.missSpecialDecision(ic)];
-        const motor = nextMotorForItem(state, config, itemId)!;
+        const motor = nextMotorForItem(state, config, itemId, destId)!;
         return wrap({ ...motor, plannerLines: [...lines, ...motor.plannerLines] });
       }
       return wrap(setAsideAction(state, config, itemId, 'special property detected'));
@@ -167,7 +193,7 @@ export const baselinePlanner: PlannerFn = (
     if (trueA.hazard) {
       if (ctx.bagHazard) {
         const lines = [T.bagHazardDecision({ ...ic, mistaken: true })];
-        const motor = nextMotorForItem(state, config, itemId)!;
+        const motor = nextMotorForItem(state, config, itemId, destId)!;
         return wrap({ ...motor, plannerLines: [...lines, ...motor.plannerLines] });
       }
       return wrap(
@@ -188,7 +214,17 @@ export const baselinePlanner: PlannerFn = (
     // will place over capacity
   }
 
-  const motor = nextMotorForItem(state, config, itemId);
+  const motor = nextMotorForItem(state, config, itemId, destId);
   if (!motor) return wrap(doneAction(state));
+  if (destId && motor.kind === 'place') {
+    motor.containerId = destId;
+    motor.meta = {
+      ...motor.meta,
+      placedAsType:
+        state.beliefs.find((b) => b.itemId === itemId)?.believedType ??
+        getItem(state, itemId).glanceType ??
+        undefined,
+    };
+  }
   return wrap(motor);
 };
