@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { hospitalityConfig } from '../../config/hospitality';
 import { foldingConfig } from '../../config/folding';
+import { dynaDeliveryConfig } from '../../config/dynaDelivery';
+import { genericFulfillmentConfig } from '../../config/genericFulfillment';
+import { foodKittingConfig } from '../../config/foodKitting';
 import { PRESET_FIXTURES, runActionScript, presetMeetsKind } from './index';
 import type { TaskConfig } from '../../types';
 
 const CONFIG: Record<string, TaskConfig> = {
   hospitality: hospitalityConfig,
   folding: foldingConfig,
+  dynaDelivery: dynaDeliveryConfig,
+  genericFulfillment: genericFulfillmentConfig,
+  foodKitting: foodKittingConfig,
 };
 
-describe('preset grader classification (6 fixtures)', () => {
-  it('has six checked-in scripts', () => {
-    expect(PRESET_FIXTURES).toHaveLength(6);
+describe('preset grader classification (15 fixtures)', () => {
+  it('has fifteen checked-in scripts', () => {
+    expect(PRESET_FIXTURES).toHaveLength(15);
   });
 
   for (const fixture of PRESET_FIXTURES) {

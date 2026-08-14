@@ -222,3 +222,83 @@ export function nonMotorExec(action: string): string {
 export function placeIncompleteNote(itemLabel: string): string {
   return `ROUTE: bag-unfolded / place-incomplete ${itemLabel} + flag`;
 }
+
+export interface ArrivalCtx {
+  count: number;
+  appearances: string[];
+}
+
+// TODO(jaivir): rewrite
+export function obsArrival(ctx: ArrivalCtx): string {
+  const appears = ctx.appearances.map((a) => `appears ${a}`).join(', ');
+  return `OBS: ${ctx.count} item${ctx.count === 1 ? '' : 's'} arrived — ${appears}`;
+}
+
+export interface TypeConfirmCtx {
+  itemLabel: string;
+  typeLabel: string;
+}
+
+// TODO(jaivir): rewrite
+export function obsTypeConfirmed(ctx: TypeConfirmCtx): string {
+  return `OBS: handle ${ctx.itemLabel} — type confirms as ${ctx.typeLabel}`;
+}
+
+export interface QualityGateCtx {
+  itemLabel: string;
+  itemProfile: string;
+  committedProfile: string;
+  containerLabel: string;
+}
+
+// TODO(jaivir): rewrite
+export function obsQualityGateReject(ctx: QualityGateCtx): string {
+  return `OBS: uniform-stack reject ${ctx.itemLabel} profile=${ctx.itemProfile} ≠ ${ctx.containerLabel} committed=${ctx.committedProfile}`;
+}
+
+export interface RouteOrderCtx {
+  itemLabel: string;
+  typeLabel: string;
+  orderLabel: string;
+  containerId: string;
+  /** Diet/allergen-controlled SKU run (GF / low-sodium). */
+  dietRestricted?: boolean;
+}
+
+// TODO(jaivir): rewrite
+export function routeToOrder(ctx: RouteOrderCtx): string {
+  const diet = ctx.dietRestricted
+    ? ' — diet/allergen-controlled run; confirm type before place'
+    : '';
+  return `ROUTE: ${ctx.itemLabel} [${ctx.typeLabel}] → ${ctx.orderLabel} (${ctx.containerId})${diet}`;
+}
+
+export interface ShortShipCtx {
+  lines: Array<{ orderLabel: string; typeId: string; missing: number }>;
+  flagged: boolean;
+  held?: boolean;
+  /** Bin-depletion / refill vocabulary (food kitting). */
+  refill?: boolean;
+}
+
+// TODO(jaivir): rewrite
+export function shortShipLine(ctx: ShortShipCtx): string {
+  const detail = ctx.lines
+    .map((l) =>
+      ctx.refill
+        ? `${l.orderLabel} ${l.typeId} bin short ${l.missing}`
+        : `${l.orderLabel} ${l.typeId} short ${l.missing}`,
+    )
+    .join('; ');
+  if (ctx.held) {
+    return ctx.refill
+      ? `HOLD: bins depleted mid-run — ${detail}`
+      : `HOLD: stream ended with unmet lines — ${detail}`;
+  }
+  if (ctx.flagged) {
+    return ctx.refill ? `FLAG-REFILL: ${detail}` : `FLAG-SHORT: ${detail}`;
+  }
+  return ctx.refill
+    ? `SHORT: finish with unflagged depleted bins — ${detail}`
+    : `SHORT: finish with unflagged unmet lines — ${detail}`;
+}

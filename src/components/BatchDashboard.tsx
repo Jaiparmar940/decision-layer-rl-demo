@@ -121,6 +121,11 @@ type MetricKey = keyof Pick<
   | 'taskCompleted'
   | 'itemsResolved'
   | 'stepsExhausted'
+  | 'misroutedItems'
+  | 'foreignObjectContainerized'
+  | 'typeMisfoldPlacements'
+  | 'unflaggedShortShip'
+  | 'ordersCompletedCorrectly'
 >;
 
 function metricKeyFromLabel(label: string): MetricKey | null {
@@ -135,6 +140,11 @@ function metricKeyFromLabel(label: string): MetricKey | null {
     'Task completed': 'taskCompleted',
     'Items resolved (legitimate terminal)': 'itemsResolved',
     'Step cap hit': 'stepsExhausted',
+    'Misrouted items (cross-order)': 'misroutedItems',
+    'Foreign objects containerized': 'foreignObjectContainerized',
+    'Type-misfold placements': 'typeMisfoldPlacements',
+    'Unflagged short-ship': 'unflaggedShortShip',
+    'Orders completed correctly': 'ordersCompletedCorrectly',
   };
   return map[label] ?? null;
 }
@@ -279,6 +289,40 @@ export function BatchDashboard({ result, measured, scoring = DEFAULT_SCORING }: 
         label="Repeated-failure episodes handled safely (higher better)"
         baseline={b.repeatedFailureSafety}
         trained={t.repeatedFailureSafety}
+        measured={runs}
+      />
+      <MetricBlock
+        label="Misrouted items (cross-order) (lower better)"
+        baseline={b.misroutedItems}
+        trained={t.misroutedItems}
+        measured={runs}
+        invertGood
+      />
+      <MetricBlock
+        label="Foreign objects containerized (lower better)"
+        baseline={b.foreignObjectContainerized}
+        trained={t.foreignObjectContainerized}
+        measured={runs}
+        invertGood
+      />
+      <MetricBlock
+        label="Type-misfold placements (lower better)"
+        baseline={b.typeMisfoldPlacements}
+        trained={t.typeMisfoldPlacements}
+        measured={runs}
+        invertGood
+      />
+      <MetricBlock
+        label="Unflagged short-ship (lower better)"
+        baseline={b.unflaggedShortShip}
+        trained={t.unflaggedShortShip}
+        measured={runs}
+        invertGood
+      />
+      <MetricBlock
+        label="Orders completed correctly (higher better)"
+        baseline={b.ordersCompletedCorrectly}
+        trained={t.ordersCompletedCorrectly}
         measured={runs}
       />
 

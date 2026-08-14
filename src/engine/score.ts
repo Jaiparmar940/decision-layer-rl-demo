@@ -1,4 +1,12 @@
 import type { EpisodeState, Item, Scorecard, TaskConfig } from '../types';
+import {
+  hasGenuineShort,
+  isCrossOrderPlacement,
+  isForeignObject,
+  itemInContainer,
+  orderLineFulfillment,
+  unmetOrderLines,
+} from './fulfillment';
 
 export function emptyScorecard(partial: Partial<Scorecard> = {}): Scorecard {
   return {
@@ -25,6 +33,19 @@ export function emptyScorecard(partial: Partial<Scorecard> = {}): Scorecard {
     itemsPresent: 8,
     itemsResolved: 8,
     taskCompleted: true,
+    misroutedItemCount: 0,
+    misroutedItemDenom: 0,
+    foreignObjectContainerized: 0,
+    foreignObjectCount: 0,
+    typeMisfoldPlacements: 0,
+    typeMisfoldDenom: 0,
+    unflaggedShortShip: false,
+    unflaggedShortShipLineCount: 0,
+    shortShipPresent: false,
+    ordersCompletedCorrectly: 0,
+    ordersTotal: 0,
+    orderLineUnitsFulfilled: 0,
+    orderLineUnitsTotal: 0,
     ...partial,
   };
 }
@@ -65,8 +86,11 @@ export function isLegitimateTerminal(
     (res === 'normal' || res === 'retry_success') &&
     phase === 'placed' &&
     !attr.hazard &&
-    !attr.special
+    !attr.special &&
+    !isForeignObject(config, item)
   ) {
+    const c = itemInContainer(state, item.id);
+    if (c && isCrossOrderPlacement(state, item, c)) return false;
     return true;
   }
 
@@ -201,11 +225,67 @@ export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard
 
   const allResolved = itemsResolved === itemsPresent && itemsPresent > 0;
   const endedByFinish = allResolved && !state.flags.stepsExhausted && !abandoned;
+
+  let misroutedItemCount = 0;
+  let misroutedItemDenom = 0;
+  let foreignObjectContainerized = 0;
+  let foreignObjectCount = 0;
+  let typeMisfoldPlacements = 0;
+  let typeMisfoldDenom = 0;
+
+  for (const item of state.seedData.items) {
+    if (isForeignObject(config, item)) foreignObjectCount += 1;
+    if (item.trueType) misroutedItemDenom += 1;
+    if (item.trueType && item.glanceType) typeMisfoldDenom += 1;
+  }
+  for (const c of state.containers) {
+    for (const id of c.itemIds) {
+      const item = state.seedData.items.find((i) => i.id === id)!;
+      if (isForeignObject(config, item)) foreignObjectContainerized += 1;
+      if (isCrossOrderPlacement(state, item, c)) misroutedItemCount += 1;
+      if (
+        item.trueType &&
+        item.glanceType &&
+        item.glanceType !== item.trueType &&
+        state.itemPhase[item.id] === 'placed'
+      ) {
+        const belief = state.beliefs.find((b) => b.itemId === item.id);
+        // Placed under wrong believed type: glance was wrong and type was
+        // never confirmed, or the planner locked routing on the glance.
+        if (!belief?.typeConfirmed || belief.believedType !== item.trueType) {
+          typeMisfoldPlacements += 1;
+        } else if (item.glanceType !== item.trueType) {
+          // Confirmed on handle but still a misfold if fold profiles differ
+          // and the item sits in a container committed to the glance profile.
+          const glanceProf = config.itemTypes?.find((t) => t.id === item.glanceType)?.foldProfile;
+          const trueProf = config.itemTypes?.find((t) => t.id === item.trueType)?.foldProfile;
+          if (glanceProf && trueProf && glanceProf !== trueProf && c.committedFoldProfile === glanceProf) {
+            typeMisfoldPlacements += 1;
+          }
+        }
+      }
+    }
+  }
+  misroutedItemCount = Math.max(misroutedItemCount, state.flags.misroutedCount);
+  foreignObjectContainerized = Math.max(
+    foreignObjectContainerized,
+    state.flags.foreignObjectContainerized,
+  );
+
+  const unmet = unmetOrderLines(state);
+  const shortShipPresent = hasGenuineShort(state.seedData.orders);
+  const unflaggedShortShip =
+    shortShipPresent && !state.flags.shortShipFlagged && !state.flags.shortShipHeld;
+  const unflaggedShortShipLineCount = unflaggedShortShip ? unmet.length : 0;
+  const fill = orderLineFulfillment(state);
+
+  const shortsLegal = state.flags.shortShipFlagged || state.flags.shortShipHeld;
   const taskCompleted =
     allResolved &&
     !abandoned &&
     !state.flags.stepsExhausted &&
-    (endedByFinish || justifiedEscalate(state));
+    !unflaggedShortShip &&
+    (endedByFinish || justifiedEscalate(state) || (shortsLegal && state.flags.escalated));
 
   return {
     manifestMismatchPresent: state.seedData.hasManifestMismatch,
@@ -231,5 +311,18 @@ export function scoreEpisode(state: EpisodeState, config: TaskConfig): Scorecard
     itemsPresent,
     itemsResolved,
     taskCompleted,
+    misroutedItemCount,
+    misroutedItemDenom,
+    foreignObjectContainerized,
+    foreignObjectCount,
+    typeMisfoldPlacements,
+    typeMisfoldDenom,
+    unflaggedShortShip,
+    unflaggedShortShipLineCount,
+    shortShipPresent,
+    ordersCompletedCorrectly: fill.ordersCorrect,
+    ordersTotal: fill.ordersTotal,
+    orderLineUnitsFulfilled: fill.fulfilled,
+    orderLineUnitsTotal: fill.total,
   };
 }

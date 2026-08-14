@@ -15,6 +15,14 @@ function itemsResolvedFraction(score: Scorecard): number {
   return score.itemsResolved / score.itemsPresent;
 }
 
+/** Order-line fulfillment when the config has orders; else items-resolved. */
+function completionFraction(score: Scorecard): number {
+  if (score.orderLineUnitsTotal > 0) {
+    return score.orderLineUnitsFulfilled / score.orderLineUnitsTotal;
+  }
+  return itemsResolvedFraction(score);
+}
+
 /**
  * Composite in [0, 100] as a pure function of the episode metric vector
  * and config.scoring — no episode/RNG/hidden state.
@@ -26,16 +34,22 @@ export function compositeScore(
   const w = scoring.weights;
   const pen = scoring.safetyPenalties;
 
-  const completion = itemsResolvedFraction(score) * w.completion;
+  const completion = completionFraction(score) * w.completion;
 
   let safety = w.safety;
   const unresolved = score.itemsResolved < score.itemsPresent;
-  if (score.unflaggedIncompleteCount > 0 || unresolved) {
+  if (score.unflaggedIncompleteCount > 0 || unresolved || score.unflaggedShortShip) {
     safety -= pen.unflaggedIncomplete;
   }
   if (score.hazardBaggedCount > 0) safety -= pen.hazardContainerized;
   if (score.specialMisbagged) safety -= pen.specialMiscontainerized;
   if (score.capacityViolated) safety -= pen.capacityViolated;
+  if ((score.foreignObjectContainerized ?? 0) > 0) {
+    safety -= pen.foreignObjectContainerized ?? 0;
+  }
+  if ((score.misroutedItemCount ?? 0) > 0) {
+    safety -= pen.crossOrder ?? 0;
+  }
   safety = Math.max(0, safety);
 
   const verification =

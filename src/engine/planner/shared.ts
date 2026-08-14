@@ -8,6 +8,17 @@ import {
   skillByRole,
   trueAttr,
 } from '../episode';
+import {
+  firstContainerWithSpace,
+  foldProfile,
+  hasOrders,
+  isForeignObject,
+  matchingOrderContainer,
+  streamEnabled,
+  typeConfirmed,
+  typeLabel,
+  unmetOrderLines,
+} from '../fulfillment';
 import type { PlannerAction, PlannerEpisodeContext } from './types';
 
 export function itemCtx(state: EpisodeState, config: TaskConfig, itemId: string) {
@@ -63,14 +74,37 @@ export function emitGroundAndPlan(
     }),
   );
   lines.push(T.decomposeStep({ n: n++, action: 're-inspect workspace' }));
-  for (const it of state.seedData.items) {
+  if (streamEnabled(config) || hasOrders(config)) {
     lines.push(
       T.decomposeStep({
         n: n++,
-        action: 'process',
-        target: it.label,
+        action: streamEnabled(config)
+          ? 'process inbound stream in batches'
+          : 'sort items to order containers',
       }),
     );
+    if (hasOrders(config)) {
+      for (const o of state.seedData.orders) {
+        lines.push(
+          T.decomposeStep({
+            n: n++,
+            action: 'fulfill',
+            target: o.label,
+            detail: o.lines.map((l) => `${l.typeId}×${l.count}`).join(', '),
+          }),
+        );
+      }
+    }
+  } else {
+    for (const it of state.seedData.items) {
+      lines.push(
+        T.decomposeStep({
+          n: n++,
+          action: 'process',
+          target: it.label,
+        }),
+      );
+    }
   }
   lines.push(
     T.decomposeStep({
@@ -88,8 +122,10 @@ export function nextRawItem(state: EpisodeState): string | null {
       return id;
     }
   }
-  // fallback scan
+  // fallback scan — visible only when streaming
+  const visible = new Set(state.visibleItemIds);
   for (const it of state.seedData.items) {
+    if (state.seedData.streamEnabled && !visible.has(it.id)) continue;
     const phase = state.itemPhase[it.id];
     if (phase !== 'placed' && phase !== 'aside') return it.id;
   }
@@ -124,6 +160,7 @@ export function nextMotorForItem(
   state: EpisodeState,
   config: TaskConfig,
   itemId: string,
+  containerId?: string,
 ): PlannerAction | null {
   const phase = state.itemPhase[itemId]!;
   const ic = believedItemCtx(state, config, itemId);
@@ -190,19 +227,48 @@ export function nextMotorForItem(
 
   if (phase === 'finished' || (phase === 'prepared' && !skillByRole(config, 'finish')) || (phase === 'picked' && !skillByRole(config, 'prepare') && !skillByRole(config, 'finish'))) {
     const sid = skillIdForRole(config, 'place')!;
+    const believedType =
+      state.beliefs.find((b) => b.itemId === itemId)?.believedType ??
+      getItem(state, itemId).glanceType;
+    const dest =
+      containerId ??
+      (hasOrders(config)
+        ? matchingOrderContainer(
+            state,
+            config,
+            believedType,
+            getItem(state, itemId).destOrderId,
+          )?.id
+        : undefined);
+    const plannerLines = [
+      T.verifyLine({
+        step: state.step + 1,
+        action: config.skills.find((s) => s.id === sid)!.label,
+        itemLabel: ic.itemLabel,
+        success: true,
+        note: dest ? `dispatch → ${dest}` : 'dispatch',
+      }),
+    ];
+    if (dest && hasOrders(config)) {
+      const c = state.containers.find((x) => x.id === dest);
+      const order = state.seedData.orders.find((o) => o.id === c?.orderId);
+      const orderDef = config.orders?.find((o) => o.id === order?.id);
+      plannerLines.push(
+        T.routeToOrder({
+          itemLabel: ic.itemLabel,
+          typeLabel: typeLabel(config, believedType),
+          orderLabel: order?.label ?? dest,
+          containerId: dest,
+          dietRestricted: Boolean(orderDef?.dietRestricted),
+        }),
+      );
+    }
     return {
       kind: 'place',
       skillId: sid,
       itemId,
-      plannerLines: [
-        T.verifyLine({
-          step: state.step + 1,
-          action: config.skills.find((s) => s.id === sid)!.label,
-          itemLabel: ic.itemLabel,
-          success: true,
-          note: 'dispatch',
-        }),
-      ],
+      containerId: dest,
+      plannerLines,
     };
   }
 
@@ -242,3 +308,103 @@ export function doneAction(state: EpisodeState): PlannerAction {
     meta: { forceDone: true },
   };
 }
+
+export function flagShortAction(state: EpisodeState, config?: TaskConfig): PlannerAction {
+  const unmet = unmetOrderLines(state);
+  return {
+    kind: 'escalate',
+    plannerLines: [
+      T.shortShipLine({
+        lines: unmet.map((l) => ({
+          orderLabel: l.orderLabel,
+          typeId: l.typeId,
+          missing: l.missing,
+        })),
+        flagged: true,
+        refill: Boolean(config?.ui.shortFlagAsRefill),
+      }),
+    ],
+    meta: { flagShortShip: true },
+  };
+}
+
+export function holdShortAction(state: EpisodeState, config?: TaskConfig): PlannerAction {
+  const unmet = unmetOrderLines(state);
+  return {
+    kind: 'escalate',
+    plannerLines: [
+      T.shortShipLine({
+        lines: unmet.map((l) => ({
+          orderLabel: l.orderLabel,
+          typeId: l.typeId,
+          missing: l.missing,
+        })),
+        flagged: false,
+        held: true,
+        refill: Boolean(config?.ui.shortFlagAsRefill),
+      }),
+    ],
+    meta: { holdShort: true },
+  };
+}
+
+/** Baseline: lock the first container with space (ignore order lines). */
+export function baselineLockContainer(
+  state: EpisodeState,
+  config: TaskConfig,
+  ctx: PlannerEpisodeContext,
+  itemId: string,
+): string | undefined {
+  if (!hasOrders(config)) return undefined;
+  if (ctx.intendedContainerByItem[itemId]) return ctx.intendedContainerByItem[itemId];
+  const item = getItem(state, itemId);
+  const believed =
+    state.beliefs.find((b) => b.itemId === itemId)?.believedType ?? item.glanceType;
+  const profile = foldProfile(config, believed);
+  const withSpace = state.containers.filter((c) => c.itemIds.length < c.capacity);
+  const matchingProfile = withSpace.find(
+    (c) => !c.committedFoldProfile || c.committedFoldProfile === profile,
+  );
+  const chosen = matchingProfile ?? withSpace[0] ?? state.containers[0];
+  if (chosen) ctx.intendedContainerByItem[itemId] = chosen.id;
+  return chosen?.id;
+}
+
+/** Trained: after type confirm, route against remaining order lines. */
+export function trainedLockContainer(
+  state: EpisodeState,
+  config: TaskConfig,
+  ctx: PlannerEpisodeContext,
+  itemId: string,
+): string | undefined {
+  if (!hasOrders(config)) return undefined;
+  if (ctx.intendedContainerByItem[itemId]) return ctx.intendedContainerByItem[itemId];
+  if (!typeConfirmed(state, itemId)) return undefined;
+  const item = getItem(state, itemId);
+  if (isForeignObject(config, item) || !item.trueType) return undefined;
+  const dest = matchingOrderContainer(state, config, item.trueType, item.destOrderId);
+  if (dest) ctx.intendedContainerByItem[itemId] = dest.id;
+  return dest?.id;
+}
+
+export function openContainerForOrder(
+  state: EpisodeState,
+  config: TaskConfig,
+  orderId: string,
+): PlannerAction {
+  return {
+    kind: 'openContainer',
+    orderId,
+    plannerLines: [
+      T.openContainerLine({
+        containerLabel: config.containers.label,
+        containerIndex: state.containers.length + 1,
+        fill: 0,
+        capacity: state.seedData.containerCapacity,
+      }),
+    ],
+    meta: { openContainer: true },
+  };
+}
+
+export { firstContainerWithSpace, typeLabel, hasOrders, isForeignObject };

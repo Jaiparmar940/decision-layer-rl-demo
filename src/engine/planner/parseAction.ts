@@ -7,8 +7,12 @@ export interface LlmActionJson {
   itemId?: string | null;
   /** Optional target container for place / placeIncomplete (defaults to active). */
   containerId?: string;
+  /** Optional order when opening an additional dedicated container. */
+  orderId?: string;
   reason: string;
   flagIncomplete?: boolean;
+  flagShortShip?: boolean;
+  holdShort?: boolean;
 }
 
 export type ExtractionPath = 'direct' | 'fence' | 'balanced' | 'none';
@@ -138,6 +142,8 @@ function draftFromObject(obj: Record<string, unknown>): LlmActionJson {
     pickOptionalString(obj, ['reason', 'Reason']) ?? '';
   const itemRaw = pickOptionalString(obj, ['itemId', 'item_id', 'item-id']);
   const flagRaw = obj.flagIncomplete ?? obj.flag_incomplete ?? obj['flag-incomplete'];
+  const flagShortRaw = obj.flagShortShip ?? obj.flag_short_ship ?? obj['flag-short-ship'];
+  const holdShortRaw = obj.holdShort ?? obj.hold_short ?? obj['hold-short'];
   return {
     action: kind,
     skillId: pickOptionalString(obj, ['skillId', 'skill_id', 'skill-id']),
@@ -147,8 +153,11 @@ function draftFromObject(obj: Record<string, unknown>): LlmActionJson {
       'container_id',
       'container-id',
     ]),
+    orderId: pickOptionalString(obj, ['orderId', 'order_id', 'order-id']),
     reason,
     flagIncomplete: typeof flagRaw === 'boolean' ? flagRaw : undefined,
+    flagShortShip: typeof flagShortRaw === 'boolean' ? flagShortRaw : undefined,
+    holdShort: typeof holdShortRaw === 'boolean' ? holdShortRaw : undefined,
   };
 }
 

@@ -1,0 +1,329 @@
+{
+  "id": "dynaDelivery-negligent",
+  "domain": "dynaDelivery",
+  "kind": "negligent",
+  "masterSeed": 2000,
+  "maxSteps": 60,
+  "actions": [
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-1",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-2",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-3",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-4",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-5",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-6",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-7",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-8",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-9",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-10",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-11",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-12",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-13",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-14",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-15",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-16",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-17",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-18",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-19",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "placeIncomplete",
+      "skillId": "stack",
+      "itemId": "item-20",
+      "containerId": "hotel-b-large",
+      "flagIncomplete": false,
+      "reason": "negligent: skip verify, force-place unflagged"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    },
+    {
+      "action": "escalate",
+      "reason": "negligent: done"
+    }
+  ]
+}

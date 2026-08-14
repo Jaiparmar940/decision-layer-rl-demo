@@ -63,6 +63,18 @@ export function ScoringPopover({ scoring }: Props) {
               <dt>capacity violated</dt>
               <dd>−{p.capacityViolated}</dd>
             </div>
+            {p.foreignObjectContainerized != null ? (
+              <div>
+                <dt>foreign object containerized</dt>
+                <dd>−{p.foreignObjectContainerized}</dd>
+              </div>
+            ) : null}
+            {p.crossOrder != null ? (
+              <div>
+                <dt>cross-order / misrouted</dt>
+                <dd>−{p.crossOrder}</dd>
+              </div>
+            ) : null}
           </dl>
           <p className="scoring-popover-sub">par-steps {scoring.parSteps} · step cap → efficiency 0</p>
         </div>

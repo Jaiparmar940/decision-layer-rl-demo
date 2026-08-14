@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ActionKind, TaskConfig } from '../types';
-import { hospitalityConfig, foldingConfig } from '../config';
+import { listDomains, resolveDomain } from '../config';
 import { ACTION_KINDS } from '../engine/planner/serialize';
 import { MOTOR_NEEDS_ITEM, validateLlmAction, type LlmActionJson } from '../engine/planner/llm';
 import { presetsForDomain, type PresetKind } from '../engine/presets';
@@ -16,7 +16,7 @@ interface Props {
 const NEEDS_CONTAINER: ActionKind[] = ['place', 'placeIncomplete'];
 
 export function ManualRunView({ domainId, onDomain }: Props) {
-  const config: TaskConfig = domainId === 'folding' ? foldingConfig : hospitalityConfig;
+  const config: TaskConfig = resolveDomain(`?domain=${domainId}`);
   const runner = useManualRunner(config);
   const [seedDraft, setSeedDraft] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -121,7 +121,13 @@ export function ManualRunView({ domainId, onDomain }: Props) {
 
   const history = runner.steps;
 
-  const itemChips = useMemo(() => state.seedData.items, [state.seedData.items]);
+  const itemChips = useMemo(
+    () =>
+      state.seedData.items.filter(
+        (it) => !state.seedData.streamEnabled || state.visibleItemIds.includes(it.id),
+      ),
+    [state.seedData.items, state.seedData.streamEnabled, state.visibleItemIds],
+  );
 
   return (
     <div className="page-view manual-run-view">
@@ -132,8 +138,11 @@ export function ManualRunView({ domainId, onDomain }: Props) {
             value={config.meta.id}
             onChange={(e) => onDomain(e.target.value)}
           >
-            <option value="hospitality">hospitality</option>
-            <option value="folding">folding</option>
+            {listDomains().map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
           </select>
         </label>
         <label>
@@ -214,9 +223,13 @@ export function ManualRunView({ domainId, onDomain }: Props) {
                   <div className="reveal-id">{it.label}</div>
                   <div>
                     GT <strong>{trueA.chip}</strong>
+                    {it.trueType ? ` · ${it.trueType}` : ''}
                   </div>
                   <div>
                     BELIEF <strong>{believed}</strong>
+                    {belief?.believedType
+                      ? ` · ${belief.typeConfirmed ? '' : '~'}${belief.believedType}`
+                      : ''}
                   </div>
                   <div className="reveal-phase">{state.itemPhase[it.id]}</div>
                 </div>
