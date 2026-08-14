@@ -13,11 +13,7 @@ export function EnvironmentPanel({ config, state, revealActual }: Props) {
   const last = state?.actions[state.actions.length - 1];
 
   return (
-    <section
-      id="live-panel-environment"
-      className="panel environment-panel"
-      aria-label="Environment"
-    >
+    <section className="panel">
       <div className="panel-header">{config.meta.environmentHeader}</div>
       <div className="instruction-banner">
         <span>INSTR</span>

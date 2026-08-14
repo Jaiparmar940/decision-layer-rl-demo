@@ -17,11 +17,7 @@ export function ExecutorPanel({ config, lines }: Props) {
   }, [lines.length]);
 
   return (
-    <section
-      id="live-panel-executor"
-      className="panel executor-panel"
-      aria-label="Executor stream"
-    >
+    <section className="panel">
       <div className="panel-header executor">{config.meta.executorHeader}</div>
       <div className="panel-body">
         <div className="log">

@@ -412,45 +412,9 @@ a.brand:hover .brand-name {
   min-height: 0;
 }
 
-.live-panel-tabs {
-  display: none;
-}
-
 @media (max-width: 900px) {
-  .view-live .live-panel-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    flex-shrink: 0;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
-
-  .live-panel-tabs button {
-    min-width: 0;
-    padding: 7px 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .view-live .main {
-    display: block;
-    flex: none;
-    background: var(--bg-panel);
-  }
-
-  .view-live .main > .panel {
-    display: none;
-    height: clamp(340px, 55dvh, 520px);
-    min-height: 0;
-    max-height: none;
-  }
-
-  .view-live .main.mobile-panel-environment > .environment-panel,
-  .view-live .main.mobile-panel-planner > .planner-panel,
-  .view-live .main.mobile-panel-executor > .executor-panel {
-    display: flex;
+  .main {
+    grid-template-columns: 1fr;
   }
 
   .header-meta {
@@ -477,136 +441,6 @@ a.brand:hover .brand-name {
 @media (max-width: 900px) {
   .panel {
     max-height: 420px;
-  }
-}
-
-@media (max-width: 640px) {
-  :root {
-    --sidebar-w-collapsed: 44px;
-  }
-
-  .header {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
-    gap: 8px;
-    padding: 8px 10px;
-  }
-
-  .brand {
-    margin-right: 0;
-  }
-
-  .brand-logo {
-    width: 28px;
-    height: 28px;
-  }
-
-  .brand-name,
-  .header-title {
-    display: none;
-  }
-
-  .demo-badge {
-    margin-right: 0;
-  }
-
-  .demo-badge-tip {
-    position: fixed;
-    top: 52px;
-    left: 10px;
-    width: min(28ch, calc(100vw - 20px));
-  }
-
-  .header-meta {
-    flex-basis: auto;
-    overflow: hidden;
-  }
-
-  .header-meta .chip {
-    display: block;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .header-meta .chip strong {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .header-controls {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
-    width: 100%;
-  }
-
-  .header-controls > .seg {
-    grid-column: span 3;
-  }
-
-  .header-controls > .seg button {
-    flex: 1;
-    min-width: 0;
-    padding-inline: 6px;
-  }
-
-  .header-controls > button {
-    grid-column: span 2;
-    min-width: 0;
-    padding-inline: 5px;
-  }
-
-  .sidebar-nav {
-    padding-inline: 5px;
-  }
-
-  .sidebar-item {
-    padding-inline: 7px;
-  }
-
-  .view-live .live-panel-tabs {
-    padding: 6px 8px;
-  }
-
-  .view-live .main > .panel {
-    height: clamp(320px, 52dvh, 460px);
-  }
-
-  .view-live .instruction-banner {
-    max-height: 4.9em;
-    overflow: auto;
-  }
-
-  .view-live .lower {
-    padding: 8px;
-  }
-
-  .view-live .scorecard-dock {
-    gap: 10px;
-    padding: 9px 10px;
-  }
-
-  .view-live .scorecard-dock-main {
-    gap: 10px 14px;
-  }
-
-  .view-live .scorecard-dock-facts {
-    gap: 8px 12px;
-  }
-
-  .view-live .scorecard-dock-btn {
-    margin-left: 0;
-  }
-
-  .view-live .footer {
-    padding: 8px 10px;
-  }
-
-  .view-live .footer-line:not(.disclosure) {
-    display: none;
   }
 }
 
@@ -2478,22 +2312,3 @@ a.brand:hover .brand-name {
   border-left: 2px solid var(--yellow);
 }
 
-@media (max-width: 900px) and (hover: none),
-  (max-width: 900px) and (pointer: coarse) {
-  .sidebar:hover,
-  .sidebar:focus-within {
-    width: var(--sidebar-w-collapsed);
-    box-shadow: none;
-  }
-
-  .sidebar:hover .sidebar-label,
-  .sidebar:focus-within .sidebar-label {
-    opacity: 0;
-    transform: translateX(-6px);
-    pointer-events: none;
-  }
-
-  .demo-badge:hover:not(:focus-visible) .demo-badge-tip {
-    display: none;
-  }
-}
