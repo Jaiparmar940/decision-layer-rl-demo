@@ -14,7 +14,11 @@ export function PlannerPanel({ config, lines }: Props) {
   }, [lines.length]);
 
   return (
-    <section className="panel">
+    <section
+      id="live-panel-planner"
+      className="panel planner-panel"
+      aria-label="Planner stream"
+    >
       <div className="panel-header planner">{config.meta.plannerHeader}</div>
       <div className="panel-body">
         <div className="log">

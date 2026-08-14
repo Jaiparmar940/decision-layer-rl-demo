@@ -20,12 +20,15 @@ import { useResultsBatch } from './hooks/useResultsBatch';
 import { loadMeasuredResults } from './measured/loadMeasured';
 import type { MeasuredRunResult } from './types';
 
+type LivePanel = 'environment' | 'planner' | 'executor';
+
 export default function App() {
   const [domainId, setDomainId] = useState(() => resolveDomain().meta.id);
   const config = useMemo(() => resolveDomain(`?domain=${domainId}`), [domainId]);
   const [view, setViewState] = useState<AppView>(() => resolveView());
   const runner = useEpisodeRunner(config);
   const [measured, setMeasured] = useState<MeasuredRunResult[] | null>(null);
+  const [livePanel, setLivePanel] = useState<LivePanel>('environment');
   const resultsLoad = useResultsBatch(view === 'results', config);
 
   const setView = useCallback((v: AppView) => {
@@ -84,7 +87,23 @@ export default function App() {
             <ModelsView />
           ) : (
             <>
-              <main className="main">
+              <div className="live-panel-tabs" role="tablist" aria-label="Live view panel">
+                {(['environment', 'planner', 'executor'] as const).map((panel) => (
+                  <button
+                    key={panel}
+                    type="button"
+                    role="tab"
+                    aria-selected={livePanel === panel}
+                    aria-controls={`live-panel-${panel}`}
+                    className={livePanel === panel ? 'active' : ''}
+                    onClick={() => setLivePanel(panel)}
+                  >
+                    {panel}
+                  </button>
+                ))}
+              </div>
+
+              <main className={`main mobile-panel-${livePanel}`}>
                 <EnvironmentPanel
                   config={config}
                   state={runner.state}

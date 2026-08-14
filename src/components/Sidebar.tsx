@@ -117,6 +117,7 @@ export function Sidebar({ view, onView }: Props) {
               type="button"
               className={`sidebar-item${active ? ' active' : ''}`}
               aria-current={active ? 'page' : undefined}
+              aria-label={item.label}
               title={item.label}
               onClick={() => onView(item.id)}
             >
