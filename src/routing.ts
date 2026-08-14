@@ -33,6 +33,15 @@ export function resolveView(search?: string): AppView {
   return 'live';
 }
 
+/** True only for the compact surface hosted inside the snlabs.dev homepage. */
+export function resolveEmbedded(search?: string): boolean {
+  const raw =
+    search ??
+    (typeof window !== 'undefined' ? window.location.search : '');
+  const params = new URLSearchParams(raw.startsWith('?') ? raw : `?${raw}`);
+  return params.get('embed') === '1';
+}
+
 /** Update view query param without dropping domain (and other) params. */
 export function setViewInUrl(view: AppView): void {
   if (typeof window === 'undefined') return;

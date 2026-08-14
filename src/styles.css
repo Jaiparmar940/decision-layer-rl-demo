@@ -412,9 +412,49 @@ a.brand:hover .brand-name {
   min-height: 0;
 }
 
+.live-panel-tabs {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .main {
     grid-template-columns: 1fr;
+  }
+
+  .is-standalone.view-live .live-panel-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    flex-shrink: 0;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .is-standalone .live-panel-tabs button {
+    min-width: 0;
+    padding: 7px 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .is-standalone.view-live .main {
+    display: block;
+    flex: none;
+    background: var(--bg-panel);
+  }
+
+  .is-standalone.view-live .main > .panel {
+    display: none;
+    height: clamp(340px, 55dvh, 520px);
+    min-height: 0;
+    max-height: none;
+  }
+
+  .is-standalone.view-live .main.mobile-panel-environment > .environment-panel,
+  .is-standalone.view-live .main.mobile-panel-planner > .planner-panel,
+  .is-standalone.view-live .main.mobile-panel-executor > .executor-panel {
+    display: flex;
   }
 
   .header-meta {
@@ -441,6 +481,131 @@ a.brand:hover .brand-name {
 @media (max-width: 900px) {
   .panel {
     max-height: 420px;
+  }
+}
+
+@media (max-width: 640px) {
+  .is-standalone {
+    --sidebar-w-collapsed: 44px;
+  }
+
+  .is-standalone .header {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .is-standalone .brand {
+    margin-right: 0;
+  }
+
+  .is-standalone .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .is-standalone .brand-name,
+  .is-standalone .header-title {
+    display: none;
+  }
+
+  .is-standalone .demo-badge {
+    margin-right: 0;
+  }
+
+  .is-standalone .demo-badge-tip {
+    position: fixed;
+    top: 52px;
+    left: 10px;
+    width: min(28ch, calc(100vw - 20px));
+  }
+
+  .is-standalone .header-meta {
+    flex-basis: auto;
+    overflow: hidden;
+  }
+
+  .is-standalone .header-meta .chip,
+  .is-standalone .header-meta .chip strong {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .is-standalone .header-controls {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .is-standalone .header-controls > .seg {
+    grid-column: span 3;
+  }
+
+  .is-standalone .header-controls > .seg button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 6px;
+  }
+
+  .is-standalone .header-controls > button {
+    grid-column: span 2;
+    min-width: 0;
+    padding-inline: 5px;
+  }
+
+  .is-standalone .sidebar-nav {
+    padding-inline: 5px;
+  }
+
+  .is-standalone .sidebar-item {
+    padding-inline: 7px;
+  }
+
+  .is-standalone.view-live .live-panel-tabs {
+    padding: 6px 8px;
+  }
+
+  .is-standalone.view-live .main > .panel {
+    height: clamp(320px, 52dvh, 460px);
+  }
+
+  .is-standalone.view-live .instruction-banner {
+    max-height: 4.9em;
+    overflow: auto;
+  }
+
+  .is-standalone.view-live .lower {
+    padding: 8px;
+  }
+
+  .is-standalone.view-live .scorecard-dock {
+    gap: 10px;
+    padding: 9px 10px;
+  }
+
+  .is-standalone.view-live .scorecard-dock-main {
+    gap: 10px 14px;
+  }
+
+  .is-standalone.view-live .scorecard-dock-facts {
+    gap: 8px 12px;
+  }
+
+  .is-standalone.view-live .scorecard-dock-btn {
+    margin-left: 0;
+  }
+
+  .is-standalone.view-live .footer {
+    padding: 8px 10px;
+  }
+
+  .is-standalone.view-live .footer-line:not(.disclosure) {
+    display: none;
   }
 }
 
@@ -2312,3 +2477,22 @@ a.brand:hover .brand-name {
   border-left: 2px solid var(--yellow);
 }
 
+@media (max-width: 900px) and (hover: none),
+  (max-width: 900px) and (pointer: coarse) {
+  .is-standalone .sidebar:hover,
+  .is-standalone .sidebar:focus-within {
+    width: var(--sidebar-w-collapsed);
+    box-shadow: none;
+  }
+
+  .is-standalone .sidebar:hover .sidebar-label,
+  .is-standalone .sidebar:focus-within .sidebar-label {
+    opacity: 0;
+    transform: translateX(-6px);
+    pointer-events: none;
+  }
+
+  .is-standalone .demo-badge:hover:not(:focus-visible) .demo-badge-tip {
+    display: none;
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDomainId, resolveView } from './routing';
+import { resolveDomainId, resolveEmbedded, resolveView } from './routing';
 import { resolveDomain } from './config';
 
 describe('deep-link view + domain', () => {
@@ -43,5 +43,12 @@ describe('deep-link view + domain', () => {
     expect(resolveView('?view=curves')).toBe('curves');
     expect(resolveView('?view=models')).toBe('models');
     expect(resolveView('?view=manual')).toBe('manual');
+  });
+
+  it('distinguishes the homepage embed from the standalone demo', () => {
+    expect(resolveEmbedded('?embed=1')).toBe(true);
+    expect(resolveEmbedded('?domain=folding&embed=1')).toBe(true);
+    expect(resolveEmbedded('?embed=0')).toBe(false);
+    expect(resolveEmbedded('')).toBe(false);
   });
 });
